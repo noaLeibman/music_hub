@@ -1,1 +1,1 @@
-declare module "pizzicato"
+declare module "pizzicato";

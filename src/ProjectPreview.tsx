@@ -1,18 +1,16 @@
 import { Button, Card, CardActions, CardContent, IconButton, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
+import PauseIcon from '@material-ui/icons/Pause';
 import SkipNextIcon from '@material-ui/icons/SkipNext';
-import * as Pizzicato from 'pizzicato';
-import * as Tone from 'tone';
+import { WaveformPlayer } from './ToneComponents';
 
-// type Props = {
-//     name: string;
-//     image: any;
-//     description: string;
-//     author: string;
-// };
+type Props = {
+    player: WaveformPlayer | undefined;
+    url: string;
+}
 
 const useStyles = makeStyles({
     root: {
@@ -39,22 +37,43 @@ const useStyles = makeStyles({
     },
   });
   
-const ProjectCard: React.FC = () => {
+const ProjectCard: React.FC<Props> = (props) => {
     const classes = useStyles();
-    // console.log(window.location.pathname);
-    // const file = URL.createObjectURL("file:///C:/Users/noale/Desktop/music%20hub%20project/my-app/music_files/15steps.mp3");
-    // "file:///C:/Users/noale/Desktop/music%20hub%20project/my-app/src/example.ogg"
-    // "C:\\Users\\noale\\Desktop\\music hub project\\my-app\\src\\example.ogg"
-    const sound = new Pizzicato.Sound({ 
-        source: 'file',
-        options: { path: "http://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3" }
-    }, function(e: any) {
-        if (!e) {
-            console.log('sound file loaded!');
+    const [playing, setPlaying] = useState<boolean>(false);
+    const [loaded, setLoaded] = useState<boolean>(false);
+    const waveformRef = useRef(null);
+
+    // useEffect(() => {
+    //     if (props.player) {
+    //         props.player.init(waveformRef.current);
+    //         props.player.sync().start(0);
+    //     }
+    // },[props.player])
+
+    const onClickPlay = async () => {
+        if (!props.player) return;
+        if (!props.player.getWavesurfer()) {
+            props.player.init(waveformRef.current);
+            props.player.sync();
         }
-        console.log('error is: ' + e);
-    });
-    const player = new Tone.Player("http://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3").toDestination();
+        if (playing) {
+            props.player.pause()
+            setPlaying(false);
+        } else {
+            if (!loaded) {
+                props.player.getWavesurfer().on("ready", function() {
+                    props.player?.play();
+                    console.log('on ready');
+                    setPlaying(true);
+                    setLoaded(true);
+                })
+                await props.player.load(props.url);
+            } else {
+                props.player.play();
+                setPlaying(true);
+            }
+        }
+    }
 
     return (
         <div>
@@ -70,12 +89,19 @@ const ProjectCard: React.FC = () => {
                     Description, bla bla bla.
                     </Typography>
                 </CardContent>
+                {/* {player && <Waveform
+                    color='black'
+                    height={100}
+                    width={500}
+                    buffer={player?.buffer.get()}
+                />} */}
+                <div ref={waveformRef}/>
                 <div className={classes.controls}>
                     <IconButton aria-label="previous">
                         <SkipPreviousIcon />
                     </IconButton>
-                    <IconButton aria-label="play/pause" onClick={() => player.start()}>
-                        <PlayArrowIcon className={classes.playIcon} />
+                    <IconButton aria-label="play/pause" onClick={onClickPlay}>
+                       { playing ? <PauseIcon className={classes.playIcon} />: <PlayArrowIcon className={classes.playIcon} />}
                     </IconButton>
                     <IconButton aria-label="next">
                     <SkipNextIcon />
