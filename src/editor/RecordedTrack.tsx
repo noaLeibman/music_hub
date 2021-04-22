@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem } from '@material-ui/core';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box } from '@material-ui/core';
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
@@ -16,9 +16,11 @@ type Props = {
 const RecordedTrack: React.FC<Props> =  (props) => {
     const [track, setTrack] = useState<string>('');
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const [player,setPlayer] = useState<PeaksPlayer | undefined>(undefined);
+    const [player,setPlayer] = useState<PeaksPlayer>();
+    const [slice, setSlice] = useState<boolean>(false);
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
+    const sliceRef = useRef(null);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -152,6 +154,21 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             player.connect(Effects.getDistortion()); 
         }
     }
+
+    const renderSliceChoice = () => {
+        return (
+            <div>
+                <Popover
+                    open={slice}
+                >
+                    <TextField label="From" defaultValue="0.0"/>
+                    <TextField label="To" defaultValue="0.0"/>
+                    <Button>Apply</Button>  
+                </Popover>
+                
+            </div>
+        );
+    }
     
     return (
       <Card>
@@ -180,6 +197,17 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     </Button> 
                 </ButtonGroup>
                 <Button onClick={handleClick}>Add effect</Button>
+                <Button ref={sliceRef} onClick={() => setSlice(!slice)}>Slice</Button>
+                <Popover
+                    anchorEl={sliceRef.current}
+                    open={slice}
+                >
+                    <Box display="flex" flexDirection="column">
+                        <TextField label="From" defaultValue="0.0"/>
+                        <TextField label="To" defaultValue="0.0"/>
+                        <Button onClick={()=> setSlice(false)}>Apply</Button>
+                    </Box>  
+                </Popover>
                 <Menu
                     anchorEl={anchorEl}
                     keepMounted
@@ -192,7 +220,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                 </Menu>
             </Grid>
             <Grid item xs={9} ref={overviewRef}>
-                {/* <div ref={overviewRef}></div> */}
             </Grid>
           </Grid>
           {/* <div ref={zoomRef}></div> */}
