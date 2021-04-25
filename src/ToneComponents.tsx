@@ -1,6 +1,6 @@
 import { RefObject } from 'react';
 import * as Tone from 'tone';
-import { ToneAudioNode } from 'tone';
+import { ToneAudioBuffer, ToneAudioNode } from 'tone';
 import WaveSurfer from "wavesurfer.js";
 import Peaks, { PeaksInstance } from 'peaks.js'
 
@@ -207,7 +207,8 @@ class PeaksPlayer {
   zoomRef: any;
   overviewRef: any;
   peaks: PeaksInstance | undefined;
-  player: Player | undefined; 
+  player: Player | undefined;
+  options: any; 
 
   constructor(props: PeaksPlayerProps) {
     this.zoomRef = props.zoomRef;
@@ -241,6 +242,7 @@ class PeaksPlayer {
       showPlayheadTime: true,
       zoomLevels: [128, 256, 512, 1024, 2048, 4096]
     };
+    this.options = options;
     Peaks.init(options, (err, peaks) => {
       if (err) {
         console.log(err.message);
@@ -266,6 +268,17 @@ class PeaksPlayer {
   stop() {
     this.peaks?.player.pause();
     this.peaks?.player.seek(0);
+  }
+
+  setPeaksBuffer(buffer: AudioBuffer) {
+    this.options.webAudio.audioBuffer = buffer;
+    this.peaks?.setSource(this.options, (err) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('Peaks setSource finished');
+      }
+    });
   }
 }
 
@@ -331,7 +344,7 @@ class Player {
   }
 
   getBuffer() {
-    return this.externalPlayer.buffer.get();
+    return this.externalPlayer.buffer;
   }
 };
 

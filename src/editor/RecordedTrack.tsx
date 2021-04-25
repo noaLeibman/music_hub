@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box } from '@material-ui/core';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip } from '@material-ui/core';
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
-// import Waveform from '../Waveform';
 import { Effects, Recorder, UserMedia, PeaksPlayer } from '../ToneComponents';
 import { PlayArrow } from '@material-ui/icons';
+import FlareIcon from '@material-ui/icons/Flare';
+import CropIcon from '@material-ui/icons/Crop';
 import React from 'react';
+import * as utils from 'audio-buffer-utils';
 
 type Props = {
     recorder: Recorder | undefined;
@@ -18,6 +20,8 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [player,setPlayer] = useState<PeaksPlayer>();
     const [slice, setSlice] = useState<boolean>(false);
+    const [sliceFrom, setSliceFrom] = useState<number>(0);
+    const [sliceTo, setSliceTo] = useState<number>(0);
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
@@ -53,10 +57,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     }, []);
 
     const startRecording = () => {
-        // if (!userMic || !recorder) {
-        //     console.log('user mic or recorder is undefined');
-        //     return;
-        // }
         const recorder = props.recorder?.get();
         if (!recorder) return;
         if (recorder.state === "started") {
@@ -82,11 +82,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             console.log(data);
             const url = URL.createObjectURL(data);
             setTrack(url);
-            // if (!props.player?.getWavesurfer()) {
-            //     props.player?.init(waveformRef.current);
-            //     props.player?.sync();
-            // }
-            // await props.player?.load(url);
             player?.load(url);
             console.log('stopped');
         }
@@ -155,25 +150,37 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }
 
-    const renderSliceChoice = () => {
-        return (
-            <div>
-                <Popover
-                    open={slice}
-                >
-                    <TextField label="From" defaultValue="0.0"/>
-                    <TextField label="To" defaultValue="0.0"/>
-                    <Button>Apply</Button>  
-                </Popover>
-                
-            </div>
-        );
+    const handleSliceFrom = (e: any) => {
+        setSliceFrom(e.target.value);
     }
-    
-    return (
-      <Card>
-          <Grid container>
-            <Grid item xs={2}>
+
+    const handleSliceTo = (e: any) => {
+        setSliceTo(e.target.value);
+    }
+
+    const sliceTrack = () => {
+        if (sliceFrom === sliceTo) {
+            setSlice(false);
+            return;
+        }
+        const buffer1 = player?.player?.getBuffer()?.slice(0, sliceFrom);
+        const buffer2 = player?.player?.getBuffer()?.slice(sliceTo);
+        if (!(buffer1 && buffer2)) {
+            console.log('in sliceTrack: buffers are empty');
+            return;
+        }
+        const newBuffer = utils.concat(buffer1.get(), buffer2.get());
+        utils.concat(buffer1.get(), buffer2.get());
+        player?.player?.getBuffer().set(newBuffer);
+        player?.setPeaksBuffer(newBuffer);
+        setSlice(false);
+        setSliceFrom(0);
+        setSliceTo(0);
+    }
+
+    const renderControls = () => {
+        return (
+            <Box display="flex" flexDirection="column" alignItems="center">
                 <ButtonGroup size="small" style={{marginTop: '10px'}}>
                     <Button onClick={startRecording}>
                         <RadioButtonCheckedIcon color='error'/>
@@ -196,16 +203,41 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         <StopIcon/>
                     </Button> 
                 </ButtonGroup>
-                <Button onClick={handleClick}>Add effect</Button>
-                <Button ref={sliceRef} onClick={() => setSlice(!slice)}>Slice</Button>
+                <ButtonGroup size="small" style={{marginTop: '10px', marginBottom: '10px'}}>
+                    <Tooltip
+                        title="Add Effect"
+                        placement="top"
+                    >
+                        <Button onClick={handleClick} size="small" variant="outlined">
+                            <FlareIcon/>
+                        </Button>
+                    </Tooltip>
+                    <Tooltip
+                        title="Slice"
+                        placement="top"
+                    >
+                        <Button ref={sliceRef} onClick={() => setSlice(!slice)}>
+                            <CropIcon/>
+                        </Button>
+                </Tooltip>
+                </ButtonGroup>
+            </Box>
+        );
+    }
+    
+    return (
+      <Card variant="outlined">
+          <Grid container>
+            <Grid item xs={2}>
+                {renderControls()}
                 <Popover
                     anchorEl={sliceRef.current}
                     open={slice}
                 >
                     <Box display="flex" flexDirection="column">
-                        <TextField label="From" defaultValue="0.0"/>
-                        <TextField label="To" defaultValue="0.0"/>
-                        <Button onClick={()=> setSlice(false)}>Apply</Button>
+                        <TextField label="From" value={sliceFrom} onChange={handleSliceFrom}/>
+                        <TextField label="To" value={sliceTo} onChange={handleSliceTo}/>
+                        <Button onClick={sliceTrack}>Apply</Button>
                     </Box>  
                 </Popover>
                 <Menu

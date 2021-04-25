@@ -50,6 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@types/wavesurfer.js": "^3.3.2"
+    "@types/wavesurfer.js": "^3.3.2",
+    "audio-buffer-utils": "^5.1.2"
   }
 }
