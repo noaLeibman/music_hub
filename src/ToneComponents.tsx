@@ -1,6 +1,5 @@
 import { RefObject } from 'react';
 import * as Tone from 'tone';
-import { ToneAudioBuffer, ToneAudioNode } from 'tone';
 import WaveSurfer from "wavesurfer.js";
 import Peaks, { PeaksInstance } from 'peaks.js'
 
@@ -153,51 +152,6 @@ class WaveformPlayer extends Tone.Player {
   }
 }
 
-class WaveSurferNode extends ToneAudioNode {
-  name: string;
-  input: Tone.InputNode | undefined;
-  output: Tone.OutputNode | undefined;
-  waveSurfer: WaveSurfer;
-  
-  constructor(ref: any) {
-    super();
-    this.name = "WaveSurferNode";
-    this.input = undefined;
-    this.output = Tone.Destination;
-    this.waveSurfer = WaveSurfer.create({
-      container: ref,
-      waveColor: 'violet',
-      progressColor: 'purple',
-      responsive: true,
-      normalize: true,
-      partialRender: true
-    });
-  }
-
-  load(url: string) {
-    this.waveSurfer.load(url);
-  }
-
-  sync() {
-    this.context.transport.on("start", () => {this.waveSurfer.play()});
-    this.context.transport.on("stop", () => {this.waveSurfer.stop()});
-    this.context.transport.on("pause", () => {this.waveSurfer.pause()});
-    return this;
-  }
-
-  play() {
-    Tone.Transport.start();
-  }
-
-  pause() {
-    Tone.Transport.pause();
-  }
-
-  stop() {
-    Tone.Transport.stop();
-  }
-}
-
 type PeaksPlayerProps = {
   zoomRef: RefObject<unknown>;
   overviewRef: RefObject<unknown>;
@@ -292,8 +246,8 @@ class Player {
 
   init(eventEmitter: any) {
     this.eventEmitter = eventEmitter;
-    this.externalPlayer.sync();
-    this.externalPlayer.start();
+    this.externalPlayer.sync().start(0);
+    //this.externalPlayer.start();
 
     eventEmitter.emit('player.canplay');
     Tone.Transport.scheduleRepeat(() => {
@@ -349,4 +303,4 @@ class Player {
 };
 
 
-export {PeaksPlayer, Player, UserMedia, Recorder, startTone, Effects, WaveformPlayer, WaveSurferNode};
+export {PeaksPlayer, Player, UserMedia, Recorder, startTone, Effects, WaveformPlayer};

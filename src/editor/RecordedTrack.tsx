@@ -4,11 +4,11 @@ import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
 import { Effects, Recorder, UserMedia, PeaksPlayer } from '../ToneComponents';
-import { PlayArrow } from '@material-ui/icons';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import React from 'react';
 import * as utils from 'audio-buffer-utils';
+import { PlayArrow } from '@material-ui/icons';
 
 type Props = {
     recorder: Recorder | undefined;
@@ -105,38 +105,38 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }
 
-    const playTrack = async () => {
-        if (track === '') {
-            console.log("Track doesn't exist");
-            return;
-        }
-        if (!player) return;
-        player.play();
-    }
+    // const playTrack = async () => {
+    //     if (track === '') {
+    //         console.log("Track doesn't exist");
+    //         return;
+    //     }
+    //     if (!player) return;
+    //     player.play();
+    // }
 
-    const stopTrack = () => {
-        if (!player) {
-            console.log('player undefined');
-            return;
-        }
-        if (track === '') {
-            console.log("Track doesn't exist");
-            return;
-        }
-        player.stop();
-    }
+    // const stopTrack = () => {
+    //     if (!player) {
+    //         console.log('player undefined');
+    //         return;
+    //     }
+    //     if (track === '') {
+    //         console.log("Track doesn't exist");
+    //         return;
+    //     }
+    //     player.stop();
+    // }
 
-    const pauseTrack = () => {
-        if (!player) {
-            console.log('player undefined');
-            return;
-        }
-        if (track === '') {
-            console.log("Track doesn't exist");
-            return;
-        }
-        player.player?.pause();
-    }
+    // const pauseTrack = () => {
+    //     if (!player) {
+    //         console.log('player undefined');
+    //         return;
+    //     }
+    //     if (track === '') {
+    //         console.log("Track doesn't exist");
+    //         return;
+    //     }
+    //     player.player?.pause();
+    // }
 
     const addEffect = (effect: string) => {
         if (!player) {
@@ -192,7 +192,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         <StopIcon/>
                     </Button>
                 </ButtonGroup>
-                <ButtonGroup size="small">
+                {/* <ButtonGroup size="small">
                     <Button onClick={playTrack}>
                         <PlayArrow/>
                     </Button>
@@ -202,7 +202,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     <Button onClick={stopTrack}>
                         <StopIcon/>
                     </Button> 
-                </ButtonGroup>
+                </ButtonGroup> */}
                 <ButtonGroup size="small" style={{marginTop: '10px', marginBottom: '10px'}}>
                     <Tooltip
                         title="Add Effect"
@@ -254,7 +254,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             <Grid item xs={9} ref={overviewRef}>
             </Grid>
           </Grid>
-          {/* <div ref={zoomRef}></div> */}
       </Card>
     );
   }
