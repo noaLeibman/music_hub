@@ -7,40 +7,6 @@ async function startTone() {
   await Tone.start();
 }
 
-// class Player {
-//   player: Tone.Player;
-
-//   constructor() {
-//     this.player = new Tone.Player().toDestination();
-//     this.player.sync().start(0);
-//   }
-
-//   get() {
-//     return this.player;
-//   }
-
-//   start() {
-//     Tone.Transport.start();
-//   }
-
-//   restart() {
-//     Tone.Transport.stop();
-//     Tone.Transport.start();
-//   }
-
-//   pause() {
-//     Tone.Transport.pause();
-//   }
-
-//   stop() {
-//     Tone.Transport.stop();
-//   }
-
-//   async load(url: string) {
-//     await this.player.load(url);
-//   }
-// }
-
 class UserMedia {
   userMedia: Tone.UserMedia;
 
@@ -107,28 +73,10 @@ class WaveformPlayer extends Tone.Player {
     return this;
   }
 
-  // clampToCurrentTime(time: any) {
-  //   if (this._synced) {
-  //       return time;
-  //   }
-  //   else {
-  //       return Math.max(time, this.context.currentTime);
-  //   }
-  // }
-
   load(url: string) {
     this.waveSurfer.load(url);
     return new Promise<this>(() => {});
   }
-
-  // start(time?: Time, offset?: Time, duration?: Time) {
-  //   let computedTime = !time && this._synced ? this.context.transport.seconds : this.toSeconds(time);
-  //   computedTime = this.clampToCurrentTime(computedTime);
-  //   this.context.transport.schedule(t => {
-  //     this.waveSurfer.play();
-  //   }, computedTime);
-  //   return this;
-  // }
 
   play() {
     Tone.Transport.start();
@@ -142,11 +90,6 @@ class WaveformPlayer extends Tone.Player {
     Tone.Transport.stop();
   }
 
-  // stop(time?: Time | undefined) {
-  //   this.waveSurfer.stop();
-  //   return this;
-  // }
-
   getWavesurfer() {
     return this.waveSurfer;
   }
@@ -155,6 +98,7 @@ class WaveformPlayer extends Tone.Player {
 type PeaksPlayerProps = {
   zoomRef: RefObject<unknown>;
   overviewRef: RefObject<unknown>;
+  setEmitter: (emitter: any) => void;
 };
 
 class PeaksPlayer {
@@ -162,18 +106,20 @@ class PeaksPlayer {
   overviewRef: any;
   peaks: PeaksInstance | undefined;
   player: Player | undefined;
-  options: any; 
+  options: any;
+  setEmitter: (emitter: any) => void; 
 
   constructor(props: PeaksPlayerProps) {
     this.zoomRef = props.zoomRef;
     this.overviewRef = props.overviewRef;
     this.peaks = undefined;
     this.player = undefined;
+    this.setEmitter = props.setEmitter;
   }
 
   async load(url: string) {
     if (!this.player) {
-      this.player = new Player();
+      this.player = new Player(this.setEmitter);
       await this.player.externalPlayer.load(url);
     } else {
       await this.player.externalPlayer.load(url);
@@ -189,22 +135,31 @@ class PeaksPlayer {
       player: this.player,
       webAudio: {
         audioBuffer: this.player.externalPlayer.buffer.get(),
-        scale: 128,
         multiChannel: false
       },
       keyboard: true,
       showPlayheadTime: true,
-      zoomLevels: [128, 256, 512, 1024, 2048, 4096]
     };
     this.options = options;
-    Peaks.init(options, (err, peaks) => {
-      if (err) {
-        console.log(err.message);
-      } else {
-        this.peaks = peaks;
-        console.log('peaks initialized');
-      }
-    });
+    if (!this.peaks) {
+      Peaks.init(options, (err, peaks) => {
+        if (err) {
+          console.log(err.message);
+        } else {
+          this.peaks = peaks;
+          console.log('peaks initialized');
+        }
+      });
+    } else {
+      this.peaks.setSource({webAudio: {audioBuffer: this.player.externalPlayer.buffer.get()}}, (err) => {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log('peaks.setSource succeeded');
+        }
+      });
+    }
+    
   }
 
   connect(node: any) {
@@ -239,25 +194,28 @@ class PeaksPlayer {
 class Player {
   externalPlayer: Tone.Player;
   eventEmitter: any;
+  setMainEmitter: (amitter: any) => void;
 
-  constructor() {
+  constructor(setMainEmitter: (amitter: any) => void) {
+    this.setMainEmitter = setMainEmitter;
     this.externalPlayer = new Tone.Player().toDestination();
   }
 
   init(eventEmitter: any) {
     this.eventEmitter = eventEmitter;
+    this.setMainEmitter(eventEmitter);
     this.externalPlayer.sync().start(0);
-    //this.externalPlayer.start();
 
     eventEmitter.emit('player.canplay');
-    Tone.Transport.scheduleRepeat(() => {
-      var time = this.getCurrentTime();
-      eventEmitter.emit('player.timeupdate', time);
+    console.log(eventEmitter);
+    // Tone.Transport.scheduleRepeat(() => {
+    //   var time = this.getCurrentTime();
+    //   eventEmitter.emit('player.timeupdate', time);
 
-      if (time >= this.getDuration()) {
-        Tone.Transport.stop();
-      }
-    }, 0.25);
+    //   if (time >= this.getDuration()) {
+    //     Tone.Transport.stop();
+    //   }
+    // }, 0.25);
   }
 
   destroy() {

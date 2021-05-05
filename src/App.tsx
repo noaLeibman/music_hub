@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -31,17 +31,6 @@ const App = () => {
 
   const getMenuList = () => [Main,Profile, Create];
   const searchSite = (text: string) => {};
-
-  // useEffect(() => {
-  //   async function startAudioContext() {
-  //     document.querySelector("button")?.addEventListener("click", async () => {
-  //       await startTone();
-  //       initState();
-  //     });
-  //   }  
-  
-  //   startAudioContext();
-  // }, []);
 
   const initState = async () => {
     await startTone();

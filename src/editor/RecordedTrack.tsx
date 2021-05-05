@@ -8,11 +8,13 @@ import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import React from 'react';
 import * as utils from 'audio-buffer-utils';
-import { PlayArrow } from '@material-ui/icons';
 
 type Props = {
     recorder: Recorder | undefined;
     userMic: UserMedia | undefined;
+    tracksLength: number;
+    setTracksLength: (value: number) => void;
+    setEmitter: (emitter: any) => void;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
@@ -51,10 +53,16 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     useEffect(() => {
         const newPlayer = new PeaksPlayer({
             zoomRef: zoomRef,
-            overviewRef: overviewRef
+            overviewRef: overviewRef,
+            setEmitter: props.setEmitter,
         });
         setPlayer(newPlayer);
-    }, []);
+    }, [props.setEmitter]);
+
+    useEffect(() => {
+        player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});
+        console.log('in useEffect');
+    }, [props.tracksLength, player]);
 
     const startRecording = () => {
         const recorder = props.recorder?.get();
@@ -82,7 +90,13 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             console.log(data);
             const url = URL.createObjectURL(data);
             setTrack(url);
-            player?.load(url);
+            await player?.load(url);
+            const length = player?.player?.getBuffer()?.duration;
+            console.log(length);
+            if ( length && length > props.tracksLength) {
+                props.setTracksLength(length);
+                console.log('sdfg');
+            }
             console.log('stopped');
         }
     }
@@ -251,7 +265,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     <MenuItem>Vibrato</MenuItem>
                 </Menu>
             </Grid>
-            <Grid item xs={9} ref={overviewRef}>
+            <Grid item xs={9} ref={zoomRef}>
             </Grid>
           </Grid>
       </Card>

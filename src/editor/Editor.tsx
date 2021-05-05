@@ -17,9 +17,28 @@ type Props = {
 const Editor: React.FC<Props> = (props) => {
 
   const [recordedTracks, setRecordedTracks] =  useState<Element[]>([]);
+  const [longestTrack, setLongestTrack] = useState<number>(0);
+  const [emitter, setEmitter] = useState<any>();
+
+  const setEmitterIfNotSet = (newEmitter: any) => {
+    if (!emitter) {
+      setEmitter(newEmitter);
+    }
+  }
+
+  const handleLongestTrack = (value: number) => {
+    setLongestTrack(value);
+  }
 
   const addRecordedTrack = () => {
-    const newTrack: any = <RecordedTrack recorder={props.recorder} userMic={props.userMic}/>;
+    const newTrack: any = <RecordedTrack
+                            key={recordedTracks.length} 
+                            recorder={props.recorder}
+                            userMic={props.userMic}
+                            tracksLength={longestTrack}
+                            setTracksLength={handleLongestTrack}
+                            setEmitter={setEmitterIfNotSet}
+                          />;
     setRecordedTracks([...recordedTracks, newTrack]);
   }
   
@@ -29,16 +48,21 @@ const Editor: React.FC<Props> = (props) => {
       Tone.Transport.stop();
     }
     Tone.Transport.start();
+    emitter?.emit('player.play', Tone.Time(Tone.Transport.position).toSeconds());
   }
 
   const pause = () => {
     if (recordedTracks === []) return;
     Tone.Transport.pause();
+    emitter?.emit('player.pause', Tone.Time(Tone.Transport.position).toSeconds());
   }
 
   const stop = () => {
     if (recordedTracks === []) return;
     Tone.Transport.stop();
+    Tone.Transport.seconds = 0;
+    emitter?.emit('player.seeked', Tone.Time(Tone.Transport.position).toSeconds());
+    emitter?.emit('player.timeupdate', Tone.Time(Tone.Transport.position).toSeconds());
   }
 
   return (
