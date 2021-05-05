@@ -1,20 +1,31 @@
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, WebSocket
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 
 import crud
 import models
 import schemas
 from database import SessionLocal, engine
 
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://127.0.0.1:8000/docs/token")
-
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Dependency
 def get_db():
@@ -25,49 +36,54 @@ def get_db():
         db.close()
 
 
-class UserInDB(models.User):
-    hashed_password: str
 
-@app.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    db: Session = Depends(get_db)
-    user_dict = crud.get_user(db, form_data.username)
-    if not user_dict:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    user = UserInDB(**user_dict)
-    hashed_password = user.hashed_password
-    if not hashed_password == user.hashed_password:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-
-    return {"access_token": user.username, "token_type": "bearer"}
-
-@app.get("/items/")
-async def read_items(token: str = Depends(oauth2_scheme)):
-    return {"token": token}
+@app.post("/authenticate", response_model=schemas.Token)
+def authenticate_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, user.email)
+    if db_user is None:
+        raise HTTPException(status_code=400, detail="Username not existed")
+    else:
+        is_password_correct = crud.check_username_password(db, user)
+        if is_password_correct is False:
+            raise HTTPException(status_code=400, detail="Password is not correct")
+        else:
+            from datetime import timedelta
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            from crud import create_access_token
+            access_token = create_access_token(
+                data={"sub": user.email}, expires_delta=access_token_expires)
+            return {"access_token": access_token, "token_type": "Bearer"}
 
 
 def fake_decode_token(token):
-    return schemas.UserBase(
+    return schemas.UserInfoBase(
         username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
     )
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print(websocket.client_state)
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = fake_decode_token(token)
-    return user
+    while True:
+        data = await websocket.receive_text()
 
+        await websocket.send_text(f"Message text was: {data}")
 
-@app.get("/users/me")
-async def read_users_me(current_user: schemas.UserBase = Depends(get_current_user)):
-    return current_user
-
-
-@app.post("/users/", response_model=schemas.User)
+@app.post("/users/", response_model=schemas.UserCreate)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
+
+
+@app.post("/create_project/", response_model=schemas.Project)
+def create_project( item: schemas.Project,db: Session = Depends(get_db)):
+    db_project = crud.get_project_name(db, pr_name = item.project_name)
+    if (db_project == item.project_name):
+        raise HTTPException(status_code=400, detail="project name taken")
+    return crud.create_project(db =db, project =item)
 
 
 @app.get("/users/", response_model=List[schemas.User])
@@ -84,14 +100,28 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
+@app.get("/users/{user_email}", response_model=schemas.User)
+def read_user(email: str, db: Session = Depends(get_db), ):
+    db_user = crud.get_user_by_email(db, email)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return db_user
+
+
 @app.post("/users/{user_id}/items/", response_model=schemas.Item)
 def create_item_for_user(
         user_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db)
 ):
     return crud.create_user_item(db=db, item=item, user_id=user_id)
 
+# fill out the project info, create a table with the name.
+# we want to add the current user to the project table
 
 @app.get("/items/", response_model=List[schemas.Item])
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)

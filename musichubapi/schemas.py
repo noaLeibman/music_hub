@@ -20,19 +20,34 @@ class Item(ItemBase):
         orm_mode = True
 
 
-class UserBase(BaseModel):
-    id: str
+class UserInfoBase(BaseModel):
     email: str
     full_name: Optional[str] = None
     disabled: Optional[bool] = None
 
+    class Config:
+        orm_mode = True
 
-class UserCreate(UserBase):
-    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class Project(BaseModel):
+    project_name: str
     email: str
+    id: Optional[int] = None
+    web_socket: Optional[str] = None
+
+    class Config:
+        orm_mode= True
+
+class UserCreate(UserInfoBase):
+    hashed_password: str
 
 
-class User(UserBase):
+class User(UserInfoBase):
     id: int
     is_active: bool
     items: List[Item] = []
