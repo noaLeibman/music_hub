@@ -98,7 +98,6 @@ class WaveformPlayer extends Tone.Player {
 type PeaksPlayerProps = {
   zoomRef: RefObject<unknown>;
   overviewRef: RefObject<unknown>;
-  setEmitter: (emitter: any) => void;
 };
 
 class PeaksPlayer {
@@ -107,19 +106,17 @@ class PeaksPlayer {
   peaks: PeaksInstance | undefined;
   player: Player | undefined;
   options: any;
-  setEmitter: (emitter: any) => void; 
 
   constructor(props: PeaksPlayerProps) {
     this.zoomRef = props.zoomRef;
     this.overviewRef = props.overviewRef;
     this.peaks = undefined;
     this.player = undefined;
-    this.setEmitter = props.setEmitter;
   }
 
   async load(url: string) {
     if (!this.player) {
-      this.player = new Player(this.setEmitter);
+      this.player = new Player();
       await this.player.externalPlayer.load(url);
     } else {
       await this.player.externalPlayer.load(url);
@@ -194,28 +191,20 @@ class PeaksPlayer {
 class Player {
   externalPlayer: Tone.Player;
   eventEmitter: any;
-  setMainEmitter: (amitter: any) => void;
 
-  constructor(setMainEmitter: (amitter: any) => void) {
-    this.setMainEmitter = setMainEmitter;
+  constructor() {
     this.externalPlayer = new Tone.Player().toDestination();
   }
 
   init(eventEmitter: any) {
     this.eventEmitter = eventEmitter;
-    this.setMainEmitter(eventEmitter);
     this.externalPlayer.sync().start(0);
 
     eventEmitter.emit('player.canplay');
     console.log(eventEmitter);
-    // Tone.Transport.scheduleRepeat(() => {
-    //   var time = this.getCurrentTime();
-    //   eventEmitter.emit('player.timeupdate', time);
-
-    //   if (time >= this.getDuration()) {
-    //     Tone.Transport.stop();
-    //   }
-    // }, 0.25);
+    Tone.Transport.schedule(() => {
+      this.play();
+    }, 0);
   }
 
   destroy() {
@@ -223,7 +212,7 @@ class Player {
   }
 
   play() {
-    Tone.Transport.start();
+    //Tone.Transport.start();
     this.eventEmitter.emit('player.play', this.getCurrentTime());
     return new Promise<void>((resolve) => {});
   }

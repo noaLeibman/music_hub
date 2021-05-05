@@ -2,7 +2,7 @@ import { Button, ButtonGroup } from '@material-ui/core';
 import { PlayArrow } from '@material-ui/icons';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as Tone from 'tone';
 import {WaveformPlayer, Recorder, UserMedia} from "../ToneComponents";
 import RecordedTrack from "./RecordedTrack"
@@ -16,15 +16,13 @@ type Props = {
 
 const Editor: React.FC<Props> = (props) => {
 
-  const [recordedTracks, setRecordedTracks] =  useState<Element[]>([]);
+  const [recordedTracks, setRecordedTracks] =  useState<React.FC[]>([]);
+  const [synthTracks, setSynthTracks] =  useState<Element[]>([]);
   const [longestTrack, setLongestTrack] = useState<number>(0);
-  const [emitter, setEmitter] = useState<any>();
 
-  const setEmitterIfNotSet = (newEmitter: any) => {
-    if (!emitter) {
-      setEmitter(newEmitter);
-    }
-  }
+  useEffect(() => {
+    console.log('in Editor useEffect: ' + longestTrack);
+  }, [longestTrack])
 
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
@@ -37,9 +35,17 @@ const Editor: React.FC<Props> = (props) => {
                             userMic={props.userMic}
                             tracksLength={longestTrack}
                             setTracksLength={handleLongestTrack}
-                            setEmitter={setEmitterIfNotSet}
                           />;
     setRecordedTracks([...recordedTracks, newTrack]);
+  }
+
+  const addSynthTrack = () => {
+    const newTrack: any = <SynthTrack
+                            key={recordedTracks.length} 
+                            tracksLength={longestTrack}
+                            setTracksLength={handleLongestTrack}
+                          />;
+    setSynthTracks([...synthTracks, newTrack]);
   }
   
   const play = () => {
@@ -48,21 +54,17 @@ const Editor: React.FC<Props> = (props) => {
       Tone.Transport.stop();
     }
     Tone.Transport.start();
-    emitter?.emit('player.play', Tone.Time(Tone.Transport.position).toSeconds());
   }
 
   const pause = () => {
     if (recordedTracks === []) return;
     Tone.Transport.pause();
-    emitter?.emit('player.pause', Tone.Time(Tone.Transport.position).toSeconds());
   }
 
   const stop = () => {
     if (recordedTracks === []) return;
     Tone.Transport.stop();
     Tone.Transport.seconds = 0;
-    emitter?.emit('player.seeked', Tone.Time(Tone.Transport.position).toSeconds());
-    emitter?.emit('player.timeupdate', Tone.Time(Tone.Transport.position).toSeconds());
   }
 
   return (
@@ -79,11 +81,12 @@ const Editor: React.FC<Props> = (props) => {
                 <StopIcon/>
             </Button> 
         </ButtonGroup>
-        <Button onClick={addRecordedTrack}>Add track</Button>
+        <Button onClick={addRecordedTrack}>Add recording track</Button>
+        <Button onClick={addSynthTrack}>Add synth track</Button>
       </div>
       <div>
-          <SynthTrack/>
           {recordedTracks}
+          {synthTracks}
       </div>
     </div>
   );

@@ -14,7 +14,6 @@ type Props = {
     userMic: UserMedia | undefined;
     tracksLength: number;
     setTracksLength: (value: number) => void;
-    setEmitter: (emitter: any) => void;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
@@ -53,16 +52,15 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     useEffect(() => {
         const newPlayer = new PeaksPlayer({
             zoomRef: zoomRef,
-            overviewRef: overviewRef,
-            setEmitter: props.setEmitter,
+            overviewRef: overviewRef
         });
         setPlayer(newPlayer);
-    }, [props.setEmitter]);
+    }, []);
 
     useEffect(() => {
         player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});
-        console.log('in useEffect');
-    }, [props.tracksLength, player]);
+        console.log('in recorded track useEffect: ' + props.tracksLength);
+    }, [props.tracksLength]);
 
     const startRecording = () => {
         const recorder = props.recorder?.get();
@@ -87,15 +85,15 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             return;
         } else {
             const data = await recorder.stop();
-            console.log(data);
+            // console.log(data);
             const url = URL.createObjectURL(data);
             setTrack(url);
             await player?.load(url);
             const length = player?.player?.getBuffer()?.duration;
-            console.log(length);
+            // console.log(length);
             if ( length && length > props.tracksLength) {
                 props.setTracksLength(length);
-                console.log('sdfg');
+                // console.log('sdfg');
             }
             console.log('stopped');
         }

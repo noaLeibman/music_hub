@@ -39,8 +39,15 @@ type ChordData = {
     duration: number;
     startTime: number;
 }
-  
-const SynthTrack: React.FC = () => {
+
+const colors = ['#f0ccc9', '#f5e1cb', '#edebc7', '#d7e8be', '#c8e6e3', '#c3e3e0'];
+
+type Props = {
+    tracksLength: number;
+    setTracksLength: (value: number) => void;
+}
+
+const SynthTrack: React.FC<Props> = (props) => {
     const [synth, setSynth] = useState<Tone.PolySynth>(new Tone.PolySynth().toDestination());
     const [activeChords, setActiveChords] = useState<Map<number,ChordData>>(new Map());
     const [chordsOrder, setChordsOrder] = useState<number[]>([]);
@@ -56,6 +63,10 @@ const SynthTrack: React.FC = () => {
         synth.sync();
     }, [synth]);
 
+    useEffect(() => {
+        console.log('in synth track use effect: ' + props.tracksLength);
+    }, [props.tracksLength])
+
     const addChord = () => {
         if (duration === '0') return;
         const notes = chordToNotes.get(chord);
@@ -70,9 +81,11 @@ const SynthTrack: React.FC = () => {
             startTime: currEndTime
         };
         synth.triggerAttackRelease(notes, duration, currEndTime);
-        console.log('end time:' + (currEndTime + Tone.Time(duration).toSeconds()));
-        console.log(newChord);
-        setCurrEndTime(currEndTime + Tone.Time(duration).toSeconds());
+        // console.log('end time:' + (currEndTime + Tone.Time(duration).toSeconds()));
+        // console.log(newChord);
+        const newEndTime = currEndTime + Tone.Time(duration).toSeconds();
+        if (newEndTime > props.tracksLength) props.setTracksLength(newEndTime);
+        setCurrEndTime(newEndTime);
         setChordMenuOpen(false);
         setActiveChords(new Map(activeChords.set(nextId, newChord)));
         setChordsOrder([...chordsOrder, nextId]);
@@ -97,7 +110,7 @@ const SynthTrack: React.FC = () => {
         }
         const activeChordsCopy = new Map(activeChords);
         let chordsOrderCopy = [...chordsOrder];
-        chordsOrderCopy.splice(idx, 1);
+        //chordsOrderCopy.splice(idx, 1);
         const newSynth = new Tone.PolySynth().toDestination().sync();
 
         if (!widthRef.current?.offsetWidth) {
@@ -119,6 +132,7 @@ const SynthTrack: React.FC = () => {
                     currData.startTime += duration;
                 }
                 else if (currData.startTime + currData.duration > newStartTime) {
+                    chordsOrderCopy.splice(idx, 1);
                     chordsOrderCopy.splice(index, 0, id);
                     foundSpot = true;
                     data.startTime = currData.startTime;
@@ -127,23 +141,25 @@ const SynthTrack: React.FC = () => {
                 newSynth.triggerAttackRelease(notes, currData.duration, currData.startTime);
             });
         } else {
-            let foundSpot = false;
-            chordsOrder.forEach((currId, index) => {
-                if (index === idx) return;
-                const currData = activeChords.get(currId);
+            let foundStop = false;
+            for (let i = 0; i < chordsOrderCopy.length; i++) {
+                const currData = activeChords.get(chordsOrderCopy[i]);
                 if (!currData) return;
-                const notes = chordToNotes.get(currData?.name);
+                const notes = chordToNotes.get(currData.name);
                 if(!notes) return;
-                if(newStartTime < currData.startTime + currData.duration) {
-                    chordsOrderCopy.splice(index - 1, 0, id);
-                    foundSpot = true;
+                if (i > idx && !foundStop) {
+                    if (newStartTime >= currData.startTime && newStartTime < currData.startTime + currData.duration) {
+                        data.startTime = currData.startTime;
+                        currData.startTime -= duration;
+                        chordsOrderCopy.splice(idx, 1);
+                        chordsOrderCopy.splice(i, 0, id);
+                        foundStop = true;
+                    } else {
+                        currData.startTime -= duration;
+                    }
                 }
-                else if (index >= idx && !foundSpot) {
-                    data.startTime = currData.startTime;
-                    currData.startTime -= duration;
-                }
-                newSynth.triggerAttackRelease(notes, currData.duration, currData.startTime);
-            });
+                if (i !== idx) newSynth.triggerAttackRelease(notes, currData.duration, currData.startTime);
+            }
         }
         const notes = chordToNotes.get(data.name);
         if (!notes) return;
@@ -152,6 +168,25 @@ const SynthTrack: React.FC = () => {
         setSynth(newSynth);
         setChordsOrder(chordsOrderCopy);
         setActiveChords(activeChordsCopy);
+    }
+
+    const getChordViews = () => {
+        console.log('in getChordsView');
+        return chordsOrder.map((id, index) => {
+            const currData = activeChords.get(id);
+            if (!currData) return null;
+            return <ChordView
+                chordName={currData.name}
+                id={currData.id}
+                width={widthRef.current ? widthRef.current.offsetWidth * (currData.duration / currEndTime) : 0}
+                duration={currData.duration}
+                onStop={onChordMoved}
+                position={widthRef.current ? widthRef.current.offsetWidth * (currData.startTime / currEndTime) : 0}
+                startTime={currData.startTime}
+                wholeTrackWidth={widthRef.current ? widthRef.current.offsetWidth : 0}
+                color={colors[index]}
+            />
+        })   
     }
 
     return(
@@ -182,20 +217,7 @@ const SynthTrack: React.FC = () => {
             </Grid>
             <Grid item xs={9} ref={widthRef}>
                 <Box display="flex" flexDirection="row" height="100px">
-                    {chordsOrder.map((id) => {
-                        const currData = activeChords.get(id);
-                        if (!currData) return null;
-                        return <ChordView
-                            chordName={currData.name}
-                            id={currData.id}
-                            width={widthRef.current ? widthRef.current.offsetWidth * (currData.duration / currEndTime) : 0}
-                            duration={currData.duration}
-                            onStop={onChordMoved}
-                            position={widthRef.current ? widthRef.current.offsetWidth * (currData.startTime / currEndTime) : 0}
-                            startTime={currData.startTime}
-                            wholeTrackWidth={widthRef.current ? widthRef.current.offsetWidth : 0}
-                        />
-                    })}
+                    {getChordViews()}
                 </Box>
             </Grid>
           </Grid>
