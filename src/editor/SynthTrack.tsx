@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as Tone from 'tone';
 import { Button, Card, Select, Grid, MenuItem, TextField, Popover, Box } from '@material-ui/core';
 import ChordView from "./ChordView";
+import { ChordData } from "./Editor";
 
 const chords = ['A', 'Am', 'A#', 'Am#', 'B', 'Bm', 'C', 'Cm', 'C#', 'Cm#', 'D', 'Dm',
  'D#', 'Dm#', 'E', 'Em', 'F', 'Fm', 'F#', 'Fm#', 'G', 'Gm', 'G#', 'Gm#'];
@@ -33,24 +34,21 @@ const chordToNotes = new Map([
     ['Gm#', ['G#4', 'B4', 'C#4']]
 ]);
 
-type ChordData = {
-    id: number;
-    name: string;
-    duration: number;
-    startTime: number;
-}
-
 const colors = ['#f0ccc9', '#f5e1cb', '#edebc7', '#d7e8be', '#c8e6e3', '#c3e3e0'];
 
 type Props = {
+    id: number;
     tracksLength: number;
     setTracksLength: (value: number) => void;
+    synth: Tone.PolySynth;
+    activeChords: Map<number,ChordData>;
+    chordsOrder: number[];
+    setActiveChords: (newActiveChords: Map<number,ChordData>, idx: number) => void;
+    setChordsOrder: (newOrder: number[], idx: number) => void;
+    setSynth: (newSynth: Tone.PolySynth, idx: number) => void;
 }
 
 const SynthTrack: React.FC<Props> = (props) => {
-    const [synth, setSynth] = useState<Tone.PolySynth>(new Tone.PolySynth().toDestination());
-    const [activeChords, setActiveChords] = useState<Map<number,ChordData>>(new Map());
-    const [chordsOrder, setChordsOrder] = useState<number[]>([]);
     const [nextId, setNextId] = useState<number>(0);
     const [chord, setChord] = useState<string>("A");
     const [duration, setDuration] = useState<string>("0");
@@ -60,35 +58,39 @@ const SynthTrack: React.FC<Props> = (props) => {
     const widthRef = useRef<HTMLHeadingElement>(null);
 
     useEffect(() => {
-        synth.sync();
-    }, [synth]);
-
-    useEffect(() => {
-        console.log('in synth track use effect: ' + props.tracksLength);
-    }, [props.tracksLength])
+        props.synth.sync();
+    }, [props.synth]);
 
     const addChord = () => {
-        if (duration === '0') return;
+        const {id, synth, activeChords, chordsOrder, setActiveChords, setChordsOrder} = props;
+        if (duration === '0') {
+            setChordMenuOpen(false);
+            return;
+        }
         const notes = chordToNotes.get(chord);
         if (!notes) {
             console.log("chord wasn't found");
             return;
         }
+        const durationSeconds = Tone.Time(duration).toSeconds();
         const newChord: ChordData = {
             name: chord,
             id: nextId,
-            duration: Number(duration),
+            duration: durationSeconds,
+            durationStr: duration,
             startTime: currEndTime
         };
         synth.triggerAttackRelease(notes, duration, currEndTime);
         // console.log('end time:' + (currEndTime + Tone.Time(duration).toSeconds()));
         // console.log(newChord);
-        const newEndTime = currEndTime + Tone.Time(duration).toSeconds();
+        const newEndTime = currEndTime + durationSeconds;
         if (newEndTime > props.tracksLength) props.setTracksLength(newEndTime);
+        setActiveChords(new Map(activeChords).set(nextId, newChord), id);
+        setChordsOrder([...chordsOrder, nextId], id);
+        //activeChords.set(nextId, newChord);
+        //chordsOrder.push(nextId);
         setCurrEndTime(newEndTime);
         setChordMenuOpen(false);
-        setActiveChords(new Map(activeChords.set(nextId, newChord)));
-        setChordsOrder([...chordsOrder, nextId]);
         setNextId(nextId + 1);
     }
 
@@ -100,15 +102,15 @@ const SynthTrack: React.FC<Props> = (props) => {
         setDuration(e.target.value);
     }
 
-    const onChordMoved = (id: number, oldPosition: number, newPosition: number, duration: number) => {
+    const onChordMoved = (chordId: number, oldPosition: number, newPosition: number, duration: number) => {
+        const {id, synth, setSynth, setChordsOrder, activeChords, chordsOrder} = props;
         if (newPosition === oldPosition) return;
-        const idx = chordsOrder.indexOf(id);
-        const data = activeChords.get(id);
+        const idx = chordsOrder.indexOf(chordId);
+        const data = activeChords.get(chordId);
         if (!data) {
             console.log("chord id doesn't exist in activeChords");
             return;
         }
-        const activeChordsCopy = new Map(activeChords);
         let chordsOrderCopy = [...chordsOrder];
         //chordsOrderCopy.splice(idx, 1);
         const newSynth = new Tone.PolySynth().toDestination().sync();
@@ -133,12 +135,12 @@ const SynthTrack: React.FC<Props> = (props) => {
                 }
                 else if (currData.startTime + currData.duration > newStartTime) {
                     chordsOrderCopy.splice(idx, 1);
-                    chordsOrderCopy.splice(index, 0, id);
+                    chordsOrderCopy.splice(index, 0, chordId);
                     foundSpot = true;
                     data.startTime = currData.startTime;
                     currData.startTime += duration;
                 }
-                newSynth.triggerAttackRelease(notes, currData.duration, currData.startTime);
+                newSynth.triggerAttackRelease(notes, currData.durationStr, currData.startTime);
             });
         } else {
             let foundStop = false;
@@ -152,25 +154,25 @@ const SynthTrack: React.FC<Props> = (props) => {
                         data.startTime = currData.startTime;
                         currData.startTime -= duration;
                         chordsOrderCopy.splice(idx, 1);
-                        chordsOrderCopy.splice(i, 0, id);
+                        chordsOrderCopy.splice(i, 0, chordId);
                         foundStop = true;
                     } else {
                         currData.startTime -= duration;
                     }
                 }
-                if (i !== idx) newSynth.triggerAttackRelease(notes, currData.duration, currData.startTime);
+                if (i !== idx) newSynth.triggerAttackRelease(notes, currData.durationStr, currData.startTime);
             }
         }
         const notes = chordToNotes.get(data.name);
         if (!notes) return;
-        newSynth.triggerAttackRelease(notes, data.duration, data.startTime);
+        newSynth.triggerAttackRelease(notes, data.durationStr, data.startTime);
         synth.dispose();
-        setSynth(newSynth);
-        setChordsOrder(chordsOrderCopy);
-        setActiveChords(activeChordsCopy);
+        setSynth(newSynth, id);
+        setChordsOrder(chordsOrderCopy, id);
     }
 
     const getChordViews = () => {
+        const {chordsOrder, activeChords} = props;
         console.log('in getChordsView');
         return chordsOrder.map((id, index) => {
             const currData = activeChords.get(id);
@@ -192,8 +194,8 @@ const SynthTrack: React.FC<Props> = (props) => {
     return(
         <Card variant="outlined">
           <Grid container>
-            <Grid item xs={2}>
-                <Button ref={chordMenuRef} onClick={() => setChordMenuOpen(true)}>
+            <Grid item xs={1} style={{padding: '10px'}}>
+                <Button ref={chordMenuRef} onClick={() => setChordMenuOpen(true)} variant='outlined'>
                     add chord
                 </Button>
                 <Popover
@@ -215,7 +217,7 @@ const SynthTrack: React.FC<Props> = (props) => {
                     </Box>  
                 </Popover>
             </Grid>
-            <Grid item xs={9} ref={widthRef}>
+            <Grid item xs={11} ref={widthRef}>
                 <Box display="flex" flexDirection="row" height="100px">
                     {getChordViews()}
                 </Box>

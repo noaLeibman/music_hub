@@ -1,12 +1,37 @@
-import { Button, ButtonGroup } from '@material-ui/core';
+import { Box, Button, ButtonGroup, makeStyles } from '@material-ui/core';
 import { PlayArrow } from '@material-ui/icons';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
 import React, { useEffect, useState } from "react";
 import * as Tone from 'tone';
-import {WaveformPlayer, Recorder, UserMedia} from "../ToneComponents";
+import {WaveformPlayer, Recorder, UserMedia, PeaksPlayer} from "../ToneComponents";
+import Metronome from './Metronome';
 import RecordedTrack from "./RecordedTrack"
 import SynthTrack from './SynthTrack';
+
+const useStyles = makeStyles({
+  root: {
+    boxShadow: '0 3px 5px 2px #a7abb0',
+    padding: '10px',
+    border: 1,
+    marginLeft: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    width: '120px',
+  },
+  tracksContainer: {
+    boxShadow: '0 3px 5px 2px #a7abb0',
+    padding: '10px',
+    border: 1,
+    marginTop: '10px',
+    marginLeft: '165px',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  button: {
+    margin: '5px'
+  },
+});
 
 type Props = {
   player: WaveformPlayer | undefined;
@@ -14,11 +39,26 @@ type Props = {
   userMic: UserMedia | undefined;
 }
 
-const Editor: React.FC<Props> = (props) => {
+export type ChordData = {
+  id: number;
+  name: string;
+  duration: number;
+  durationStr: string;
+  startTime: number;
+}
 
-  const [recordedTracks, setRecordedTracks] =  useState<React.FC[]>([]);
-  const [synthTracks, setSynthTracks] =  useState<Element[]>([]);
+type STData = {
+    synth: Tone.PolySynth;
+    activeChords: Map<number,ChordData>;
+    chordsOrder: number[];
+}
+
+const Editor: React.FC<Props> = (props) => {
+  const [RTPlayers, setRTPlayers] = useState<PeaksPlayer[]>([]);
+  const [STDataList, setSTDataList] = useState<STData[]>([]);
   const [longestTrack, setLongestTrack] = useState<number>(0);
+
+  const classes = useStyles();
 
   useEffect(() => {
     console.log('in Editor useEffect: ' + longestTrack);
@@ -29,27 +69,19 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const addRecordedTrack = () => {
-    const newTrack: any = <RecordedTrack
-                            key={recordedTracks.length} 
-                            recorder={props.recorder}
-                            userMic={props.userMic}
-                            tracksLength={longestTrack}
-                            setTracksLength={handleLongestTrack}
-                          />;
-    setRecordedTracks([...recordedTracks, newTrack]);
+    setRTPlayers([...RTPlayers, new PeaksPlayer()]);
   }
 
   const addSynthTrack = () => {
-    const newTrack: any = <SynthTrack
-                            key={recordedTracks.length} 
-                            tracksLength={longestTrack}
-                            setTracksLength={handleLongestTrack}
-                          />;
-    setSynthTracks([...synthTracks, newTrack]);
+    const newTrack: STData = {
+      synth: new Tone.PolySynth().toDestination(),
+      chordsOrder: [],
+      activeChords: new Map()
+    };
+    setSTDataList([...STDataList, newTrack]);
   }
   
   const play = () => {
-    if (recordedTracks === []) return;
     if (Tone.Transport.state === 'started') {
       Tone.Transport.stop();
     }
@@ -57,38 +89,78 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const pause = () => {
-    if (recordedTracks === []) return;
     Tone.Transport.pause();
   }
 
   const stop = () => {
-    if (recordedTracks === []) return;
     Tone.Transport.stop();
     Tone.Transport.seconds = 0;
   }
 
+  const setSTChordsOrder = (newOrder: number[], idx: number) => {
+    const copy = [...STDataList];
+    copy[idx].chordsOrder = newOrder;
+    setSTDataList(copy);
+  }
+
+  const setSTActiveChords = (newActiveChords: Map<number,ChordData>, idx: number) => {
+    const copy = [...STDataList];
+    copy[idx].activeChords = newActiveChords;
+    setSTDataList(copy);
+  }
+
+  const setSTSynth = (newSynth: Tone.PolySynth, idx: number) => {
+    const copy = [...STDataList];
+    copy[idx].synth = newSynth;
+    setSTDataList(copy);
+  }
+
   return (
-    <div>
-      <div>
-        <ButtonGroup size="small">
-            <Button onClick={play}>
-                <PlayArrow/>
-            </Button>
-            <Button onClick={pause}>
-                <PauseIcon/>
-            </Button>
-            <Button onClick={stop}>
-                <StopIcon/>
-            </Button> 
-        </ButtonGroup>
-        <Button onClick={addRecordedTrack}>Add recording track</Button>
-        <Button onClick={addSynthTrack}>Add synth track</Button>
+    <Box>
+      <div style={{width: '120px', float: 'left'}}>
+        <Metronome/>
+        <Box className={classes.root}>
+          <ButtonGroup size="small" className={classes.button}>
+              <Button onClick={play}>
+                  <PlayArrow/>
+              </Button>
+              <Button onClick={pause}>
+                  <PauseIcon/>
+              </Button>
+              <Button onClick={stop}>
+                  <StopIcon/>
+              </Button> 
+          </ButtonGroup>
+          <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addRecordedTrack}>Add recording track</Button>
+          <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addSynthTrack}>Add synth track</Button>
+        </Box>
       </div>
-      <div>
-          {recordedTracks}
-          {synthTracks}
-      </div>
-    </div>
+      {(RTPlayers.length !==0 || STDataList.length !== 0)  && <Box className={classes.tracksContainer}>
+        {RTPlayers.map((player, index) => {
+          return <RecordedTrack
+            key={index} 
+            recorder={props.recorder}
+            userMic={props.userMic}
+            tracksLength={longestTrack}
+            setTracksLength={handleLongestTrack}
+            player={player}
+          />;
+        })}
+        {STDataList.map((data, index) => {
+          return <SynthTrack
+            id={index}
+            tracksLength={longestTrack}
+            setTracksLength={setLongestTrack}
+            activeChords={data.activeChords}
+            chordsOrder={data.chordsOrder}
+            synth={data.synth}
+            setActiveChords={setSTActiveChords}
+            setChordsOrder={setSTChordsOrder}
+            setSynth={setSTSynth}
+          />
+        })}
+      </Box>}
+    </Box>
   );
 }
   

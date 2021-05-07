@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Paper } from '@material-ui/core';
 import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
 

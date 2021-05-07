@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useRef, useState } from 'react';
 import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip } from '@material-ui/core';
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
@@ -10,6 +10,7 @@ import React from 'react';
 import * as utils from 'audio-buffer-utils';
 
 type Props = {
+    player: PeaksPlayer;
     recorder: Recorder | undefined;
     userMic: UserMedia | undefined;
     tracksLength: number;
@@ -19,7 +20,7 @@ type Props = {
 const RecordedTrack: React.FC<Props> =  (props) => {
     const [track, setTrack] = useState<string>('');
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const [player,setPlayer] = useState<PeaksPlayer>();
+    //const [player,setPlayer] = useState<PeaksPlayer>();
     const [slice, setSlice] = useState<boolean>(false);
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
@@ -49,16 +50,16 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         initProps();
     }, [props]);
 
-    useEffect(() => {
-        const newPlayer = new PeaksPlayer({
-            zoomRef: zoomRef,
-            overviewRef: overviewRef
-        });
-        setPlayer(newPlayer);
-    }, []);
+    // useEffect(() => {
+    //     const newPlayer = new PeaksPlayer({
+    //         zoomRef: zoomRef,
+    //         overviewRef: overviewRef
+    //     });
+    //     setPlayer(newPlayer);
+    // }, []);
 
     useEffect(() => {
-        player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});
+        props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});
         console.log('in recorded track useEffect: ' + props.tracksLength);
     }, [props.tracksLength]);
 
@@ -88,8 +89,8 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             // console.log(data);
             const url = URL.createObjectURL(data);
             setTrack(url);
-            await player?.load(url);
-            const length = player?.player?.getBuffer()?.duration;
+            await props.player?.load(url, zoomRef, overviewRef);
+            const length = props.player?.player?.getBuffer()?.duration;
             // console.log(length);
             if ( length && length > props.tracksLength) {
                 props.setTracksLength(length);
@@ -151,6 +152,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     // }
 
     const addEffect = (effect: string) => {
+        const {player} = props;
         if (!player) {
             console.log('player undefined');
             return;
@@ -171,6 +173,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     }
 
     const sliceTrack = () => {
+        const {player} = props;
         if (sliceFrom === sliceTo) {
             setSlice(false);
             return;
@@ -240,7 +243,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     return (
       <Card variant="outlined">
           <Grid container>
-            <Grid item xs={2}>
+            <Grid item xs={1}>
                 {renderControls()}
                 <Popover
                     anchorEl={sliceRef.current}
@@ -263,7 +266,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     <MenuItem>Vibrato</MenuItem>
                 </Menu>
             </Grid>
-            <Grid item xs={9} ref={zoomRef}>
+            <Grid item xs={10} ref={zoomRef}>
             </Grid>
           </Grid>
       </Card>

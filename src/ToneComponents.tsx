@@ -1,4 +1,3 @@
-import { RefObject } from 'react';
 import * as Tone from 'tone';
 import WaveSurfer from "wavesurfer.js";
 import Peaks, { PeaksInstance } from 'peaks.js'
@@ -95,11 +94,6 @@ class WaveformPlayer extends Tone.Player {
   }
 }
 
-type PeaksPlayerProps = {
-  zoomRef: RefObject<unknown>;
-  overviewRef: RefObject<unknown>;
-};
-
 class PeaksPlayer {
   zoomRef: any;
   overviewRef: any;
@@ -107,14 +101,16 @@ class PeaksPlayer {
   player: Player | undefined;
   options: any;
 
-  constructor(props: PeaksPlayerProps) {
-    this.zoomRef = props.zoomRef;
-    this.overviewRef = props.overviewRef;
+  constructor() {
+    // this.zoomRef = props.zoomRef;
+    // this.overviewRef = props.overviewRef;
+    this.zoomRef = undefined;
+    this.overviewRef = undefined;
     this.peaks = undefined;
     this.player = undefined;
   }
 
-  async load(url: string) {
+  async load(url: string, newZoomRef: any, newOverviewRef: any) {
     if (!this.player) {
       this.player = new Player();
       await this.player.externalPlayer.load(url);
@@ -124,6 +120,8 @@ class PeaksPlayer {
     if (this.peaks) {
       this.peaks.destroy();
     }
+    this.overviewRef = newOverviewRef;
+    this.zoomRef = newZoomRef;
     const options = {
       containers: {
         overview: this.overviewRef.current,
@@ -194,6 +192,11 @@ class Player {
 
   constructor() {
     this.externalPlayer = new Tone.Player().toDestination();
+    this.externalPlayer.onstop = () => {
+      this.eventEmitter.emit('player.pause', this.getCurrentTime());
+      // this.eventEmitter.emit('player.seeked', 0);
+      // this.eventEmitter.emit('player.timeupdate', this.getCurrentTime());
+    }
   }
 
   init(eventEmitter: any) {
@@ -205,6 +208,9 @@ class Player {
     Tone.Transport.schedule(() => {
       this.play();
     }, 0);
+    Tone.Transport.on('stop', () => {
+      this.seek(0);
+    })
   }
 
   destroy() {
