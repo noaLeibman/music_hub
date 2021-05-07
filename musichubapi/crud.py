@@ -25,6 +25,7 @@ def get_project_name(db: Session, pr_name: str):
     else:
         return db.query(name[pr_name]).filter(name[pr_name].project_name == pr_name).first()
 
+
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.UserInfo).offset(skip).limit(limit).all()
 
@@ -36,21 +37,45 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.refresh(db_user)
     return db_user
 
+def get_project_by_name(db:Session, name: str):
+    return db.query(models.Project).filter(models.Project.project_name == name).first()
 
-def create_project(db: Session, project: schemas.Project):
-    returned_value = models.create_models(project.project_name)
+def create_project_2(db:Session, project: schemas.Project):
+    db_project_to_add = models.Project(email=project.email, project_name = project.project_name)
+    db.add(db_project_to_add)
+    db.commit()
+    db.refresh(db_project_to_add)
+    return db_project_to_add
 
-    the_model = models.get_class_by_tablename(project.project_name)
-    model = the_model[project.project_name]
-    print(the_model)
 
-    if the_model is not None:
-        db_add_user = model(project_name = project.project_name, email=project.email, web_socket="hardcoded")
-        db.add(db_add_user)
-        db.commit()
-        db.refresh(db_add_user)
-        return db_add_user
 
+def update_user_created(db:Session, email :str, project_name: str):
+    user_to_update = get_user_by_email(db, email)
+    if user_to_update.created_projects != None:
+        string_to_replace = user_to_update.created_projects + ";" + project_name
+    else:
+        string_to_replace = project_name
+    db.query(models.UserInfo).filter(models.UserInfo.email == email).update({'created_projects': string_to_replace})
+
+
+
+
+
+
+# def create_project(db: Session, project: schemas.Project):
+#     returned_value = models.create_models(project.project_name)
+#
+#     the_model = models.get_class_by_tablename(project.project_name)
+#     model = the_model[project.project_name]
+#     print(the_model)
+#
+#     if the_model is not None:
+#         db_add_user = model(project_name = project.project_name, email=project.email, web_socket="hardcoded")
+#         db.add(db_add_user)
+#         db.commit()
+#         db.refresh(db_add_user)
+#         return db_add_user
+#
 
 
 def check_username_password(db: Session, user: schemas.UserCreate):

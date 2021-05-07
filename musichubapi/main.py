@@ -27,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Dependency
 def get_db():
     db = SessionLocal()
@@ -34,7 +35,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 
 @app.post("/authenticate", response_model=schemas.Token)
@@ -60,6 +60,7 @@ def fake_decode_token(token):
         username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
     )
 
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -70,6 +71,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
         await websocket.send_text(f"Message text was: {data}")
 
+
 @app.post("/users/", response_model=schemas.UserCreate)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -79,11 +81,26 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/create_project/", response_model=schemas.Project)
-def create_project( item: schemas.Project,db: Session = Depends(get_db)):
-    db_project = crud.get_project_name(db, pr_name = item.project_name)
-    if (db_project == item.project_name):
-        raise HTTPException(status_code=400, detail="project name taken")
-    return crud.create_project(db =db, project =item)
+def create_project(item: schemas.Project, db: Session = Depends(get_db)):
+    db_project = crud.get_project_by_name(db, name=item.project_name)
+    if db_project:
+        raise HTTPException(status_code=400, detail="Project name already in use")
+    if ';' in item.project_name:
+        raise HTTPException(status_code=400, detail="Project name cannot contain character ;")
+    # if project name is not already in use, create the project then add the name to the table of the user
+    crud.update_user_created(db, item.email, item.project_name)
+    return crud.create_project_2(db=db, project=item)
+
+
+#
+# @app.post("/create_project/", response_model=schemas.Project)
+# def create_project( item: schemas.Project,db: Session = Depends(get_db)):
+#     db_project = crud.get_project_name(db, pr_name = item.project_name)
+#     if (db_project == item.project_name):
+#         raise HTTPException(status_code=400, detail="project name taken")
+#     return crud.create_project(db =db, project =item)
+
+
 
 
 @app.get("/users/", response_model=List[schemas.User])
@@ -113,6 +130,7 @@ def create_item_for_user(
         user_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db)
 ):
     return crud.create_user_item(db=db, item=item, user_id=user_id)
+
 
 # fill out the project info, create a table with the name.
 # we want to add the current user to the project table

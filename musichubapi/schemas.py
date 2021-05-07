@@ -24,6 +24,9 @@ class UserInfoBase(BaseModel):
     email: str
     full_name: Optional[str] = None
     disabled: Optional[bool] = None
+    created_projects: Optional[str] = ""
+    joined_projects: Optional[str] = ""
+    websockets: Optional[str]=""
 
     class Config:
         orm_mode = True

@@ -5,7 +5,8 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
-import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField } from '@material-ui/core';
+import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse} from '@material-ui/core';
+import Alert from '@material-ui/lab/Alert';
 import SearchBar from "material-ui-search-bar";
 import InboxIcon from '@material-ui/icons/MoveToInbox';
 import MailIcon from '@material-ui/icons/Mail';
@@ -13,6 +14,7 @@ import MailIcon from '@material-ui/icons/Mail';
 import MainFeed from './MainFeed';
 import Editor from './editor/Editor';
 import { Recorder, startTone, UserMedia, WaveformPlayer } from './ToneComponents';
+
 
 enum MenuItems {
   Main = "Main Feed",
@@ -35,7 +37,8 @@ const App = () => {
   const [loginpassword, setLoginPassword] = useState<string>("");
   const [signupemail, setSignupEmail] = useState<string>("");
   const [signuppassword, setSignupPassword] = useState<string>("");
-  const [projectname, setProjectName] = useState<string>("")
+  const [projectname, setProjectName] = useState<string>("");
+  const [collapseOpen, setCollapseOpen] = useState<boolean>(false);
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
@@ -171,6 +174,11 @@ const App = () => {
     .then(response => response.json())
   .then(data => {
     console.log('Success:', data);
+    setCollapseOpen(true);
+    setSignupButton(false);
+    setSignupPassword("");
+    setSignupEmail("");
+
   })
   .catch((error) => {
     console.error('Error:', error);
@@ -268,6 +276,19 @@ const App = () => {
                         <Button onClick={createProjectThenSet}>Apply</Button>
                     </Box>  
               </Popover>
+              <Collapse in={collapseOpen}>
+                <Alert
+                  action={
+                  <IconButton
+                aria-label="close"
+                color="primary"
+                size="small"
+                onClick={() => {
+                setCollapseOpen(false);
+              }}>
+            </IconButton>}
+              >Please log in using your new credentials</Alert>
+              </Collapse>
             </Toolbar>
           </AppBar>
           { selectedPage === Main && 

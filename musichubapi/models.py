@@ -12,10 +12,15 @@ class UserInfo(Base):
     full_name = Column(String)
     hashed_password = Column(String)
     disabled = Column(Boolean, default=True)
-    web_socket = Column(String)
+    created_projects = Column(String)
     items = relationship("Item", back_populates="owner")
 
-
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, index=True)
+    websockets = Column(String)
+    project_name = Column(String, unique=True)
 class Item(Base):
     __tablename__ = "items"
 
@@ -56,6 +61,8 @@ def create_models(tablename):
             id = Column(Integer, primary_key = True)
             email = Column(String, unique=True, index=True)
             web_socket = Column(String)
+            owner_id = Column(Integer, ForeignKey("users.email"))
 
+            owner = relationship("UserInfo", back_populates="items")
         Base.metadata.create_all(engine)
         return Project
