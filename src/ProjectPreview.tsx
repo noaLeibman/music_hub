@@ -20,7 +20,7 @@ const useStyles = makeStyles({
         marginRight: '25%',
         marginTop: '5%',
         marginBottom: '5%',
-        backgroundColor: '#FBF9E1',
+        backgroundColor: '#e8edea',
     },
     pos: {
       marginBottom: 12,
@@ -77,7 +77,7 @@ const ProjectCard: React.FC<Props> = (props) => {
 
     return (
         <div>
-            <Card className={classes.root} >
+            <Card className={classes.root} variant="outlined">
                 <CardContent>
                     <Typography variant="h5" component="h2">
                     Project name
