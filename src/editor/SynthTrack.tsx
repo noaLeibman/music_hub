@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as Tone from 'tone';
-import { Button, Card, Select, Grid, MenuItem, TextField, Popover, Box } from '@material-ui/core';
+import { Tooltip, Button, Card, Select, Grid, MenuItem, TextField, Popover, Box } from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
 import ChordView from "./ChordView";
 import { ChordData } from "./Editor";
 
@@ -29,7 +30,7 @@ const chordToNotes = new Map([
     ['F#', ['F#4', 'A#4', 'C#4']],
     ['Fm#', ['F#4', 'A4', 'C#4']],
     ['G', ['G4', 'B4', 'D4']],
-    ['Gm', ['B4', 'A#4', 'D4']],
+    ['Gm', ['G4', 'A#4', 'D4']],
     ['G#', ['G#4', 'C4', 'D#4']],
     ['Gm#', ['G#4', 'B4', 'C#4']]
 ]);
@@ -46,6 +47,7 @@ type Props = {
     setActiveChords: (newActiveChords: Map<number,ChordData>, idx: number) => void;
     setChordsOrder: (newOrder: number[], idx: number) => void;
     setSynth: (newSynth: Tone.PolySynth, idx: number) => void;
+    deleteTrack: (idx: number, type: string) => void;
 }
 
 const SynthTrack: React.FC<Props> = (props) => {
@@ -171,6 +173,44 @@ const SynthTrack: React.FC<Props> = (props) => {
         setChordsOrder(chordsOrderCopy, id);
     }
 
+    const deleteChord = (chordId: number) => {
+        const {id, setChordsOrder, chordsOrder, setActiveChords, activeChords, synth, setSynth} = props;
+        const idx = chordsOrder.indexOf(chordId);
+        const newMap = new Map(activeChords);
+        const newOrder = [...chordsOrder];
+        newOrder.splice(idx, 1);
+        const newSynth = new Tone.PolySynth().toDestination().sync();
+        let pushBack = false;
+        let dur = newMap.get(chordId)?.duration;
+        chordsOrder.forEach((currId) => {
+            if (currId === chordId) {
+                pushBack = true;
+                return;
+            }
+            const data = newMap.get(currId);
+            const notes = data ? chordToNotes.get(data.name) : null;
+            if (data && notes) {
+                if (pushBack) {
+                    data.startTime -= dur ? dur : 0;
+                }
+                newSynth.triggerAttackRelease(notes, data.durationStr, data.startTime);  
+            }
+        });
+        newMap.delete(chordId);
+        synth.dispose();
+        setActiveChords(newMap, id);
+        setChordsOrder(newOrder, id);
+        setSynth(newSynth, id);
+        setCurrEndTime(dur ? currEndTime - dur : currEndTime);
+    }
+
+    const deleteTrack = () => {
+        if(window.confirm("Detele this track?")) {
+            props.synth.dispose();
+            props.deleteTrack(props.id, 'synth');
+        }
+    }
+
     const getChordViews = () => {
         const {chordsOrder, activeChords} = props;
         console.log('in getChordsView');
@@ -179,7 +219,7 @@ const SynthTrack: React.FC<Props> = (props) => {
             if (!currData) return null;
             return <ChordView
                 chordName={currData.name}
-                id={currData.id}
+                id={id}
                 width={widthRef.current ? widthRef.current.offsetWidth * (currData.duration / currEndTime) : 0}
                 duration={currData.duration}
                 onStop={onChordMoved}
@@ -187,6 +227,7 @@ const SynthTrack: React.FC<Props> = (props) => {
                 startTime={currData.startTime}
                 wholeTrackWidth={widthRef.current ? widthRef.current.offsetWidth : 0}
                 color={colors[index]}
+                deleteChord={deleteChord}
             />
         })   
     }
@@ -195,9 +236,17 @@ const SynthTrack: React.FC<Props> = (props) => {
         <Card variant="outlined">
           <Grid container>
             <Grid item xs={1} style={{padding: '10px'}}>
-                <Button ref={chordMenuRef} onClick={() => setChordMenuOpen(true)} variant='outlined'>
+                <Button style={{margin: '10px'}} size='small' ref={chordMenuRef} onClick={() => setChordMenuOpen(true)} variant='outlined'>
                     add chord
                 </Button>
+                <Tooltip
+                    title="Delete Track"
+                    placement="top"
+                >
+                    <Button size='small' variant='outlined' onClick={() => deleteTrack()}>
+                        <DeleteIcon />
+                    </Button>
+                </Tooltip>
                 <Popover
                     anchorEl={chordMenuRef.current}
                     open={chordMenuOpen}

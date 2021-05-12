@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip } from '@material-ui/core';
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
@@ -6,21 +6,23 @@ import StopIcon from '@material-ui/icons/Stop';
 import { Effects, Recorder, UserMedia, PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
+import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
 import * as utils from 'audio-buffer-utils';
 
 type Props = {
+    id: number;
     player: PeaksPlayer;
     recorder: Recorder | undefined;
     userMic: UserMedia | undefined;
     tracksLength: number;
     setTracksLength: (value: number) => void;
+    deleteTrack: (idx: number, type: string) => void;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
-    const [track, setTrack] = useState<string>('');
+    // const [track, setTrack] = useState<string>('');
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    //const [player,setPlayer] = useState<PeaksPlayer>();
     const [slice, setSlice] = useState<boolean>(false);
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
@@ -50,18 +52,10 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         initProps();
     }, [props]);
 
-    // useEffect(() => {
-    //     const newPlayer = new PeaksPlayer({
-    //         zoomRef: zoomRef,
-    //         overviewRef: overviewRef
-    //     });
-    //     setPlayer(newPlayer);
-    // }, []);
-
     useEffect(() => {
         props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});
         console.log('in recorded track useEffect: ' + props.tracksLength);
-    }, [props.tracksLength]);
+    }, [props.tracksLength, props.player]);
 
     const startRecording = () => {
         const recorder = props.recorder?.get();
@@ -86,15 +80,12 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             return;
         } else {
             const data = await recorder.stop();
-            // console.log(data);
             const url = URL.createObjectURL(data);
-            setTrack(url);
+            // setTrack(url);
             await props.player?.load(url, zoomRef, overviewRef);
             const length = props.player?.player?.getBuffer()?.duration;
-            // console.log(length);
             if ( length && length > props.tracksLength) {
                 props.setTracksLength(length);
-                // console.log('sdfg');
             }
             console.log('stopped');
         }
@@ -117,39 +108,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             recorder.pause();
         }
     }
-
-    // const playTrack = async () => {
-    //     if (track === '') {
-    //         console.log("Track doesn't exist");
-    //         return;
-    //     }
-    //     if (!player) return;
-    //     player.play();
-    // }
-
-    // const stopTrack = () => {
-    //     if (!player) {
-    //         console.log('player undefined');
-    //         return;
-    //     }
-    //     if (track === '') {
-    //         console.log("Track doesn't exist");
-    //         return;
-    //     }
-    //     player.stop();
-    // }
-
-    // const pauseTrack = () => {
-    //     if (!player) {
-    //         console.log('player undefined');
-    //         return;
-    //     }
-    //     if (track === '') {
-    //         console.log("Track doesn't exist");
-    //         return;
-    //     }
-    //     player.player?.pause();
-    // }
 
     const addEffect = (effect: string) => {
         const {player} = props;
@@ -193,6 +151,13 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         setSliceTo(0);
     }
 
+    const deleteTrack = () => {
+        if(window.confirm("Detele this track?")) {
+            props.player.dispose();
+            props.deleteTrack(props.id, 'recorded');
+        }
+    }
+
     const renderControls = () => {
         return (
             <Box display="flex" flexDirection="column" alignItems="center">
@@ -207,17 +172,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         <StopIcon/>
                     </Button>
                 </ButtonGroup>
-                {/* <ButtonGroup size="small">
-                    <Button onClick={playTrack}>
-                        <PlayArrow/>
-                    </Button>
-                    <Button onClick={pauseTrack}>
-                        <PauseIcon/>
-                    </Button>
-                    <Button onClick={stopTrack}>
-                        <StopIcon/>
-                    </Button> 
-                </ButtonGroup> */}
                 <ButtonGroup size="small" style={{marginTop: '10px', marginBottom: '10px'}}>
                     <Tooltip
                         title="Add Effect"
@@ -234,7 +188,15 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         <Button ref={sliceRef} onClick={() => setSlice(!slice)}>
                             <CropIcon/>
                         </Button>
-                </Tooltip>
+                    </Tooltip>
+                    <Tooltip
+                        title="Delete Track"
+                        placement="top"
+                    >
+                        <Button onClick={() => deleteTrack()}>
+                            <DeleteIcon />
+                        </Button>
+                    </Tooltip>
                 </ButtonGroup>
             </Box>
         );
@@ -243,7 +205,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     return (
       <Card variant="outlined">
           <Grid container>
-            <Grid item xs={1}>
+            <Grid item xs={1} style={{position: 'relative'}}>
                 {renderControls()}
                 <Popover
                     anchorEl={sliceRef.current}

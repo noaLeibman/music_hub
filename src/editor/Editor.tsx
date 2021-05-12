@@ -115,6 +115,18 @@ const Editor: React.FC<Props> = (props) => {
     setSTDataList(copy);
   }
 
+  const deleteTrack = (idx : number, type: string) => {
+    if (type === 'synth') {
+      const copy = [...STDataList];
+      copy.splice(idx, 1);
+      setSTDataList(copy);
+    } else {
+      const copy = [...RTPlayers];
+      copy.splice(idx, 1);
+      setRTPlayers(copy);
+    }
+  }
+
   return (
     <Box>
       <div style={{width: '120px', float: 'left'}}>
@@ -138,12 +150,13 @@ const Editor: React.FC<Props> = (props) => {
       {(RTPlayers.length !==0 || STDataList.length !== 0)  && <Box className={classes.tracksContainer}>
         {RTPlayers.map((player, index) => {
           return <RecordedTrack
-            key={index} 
+            id={index} 
             recorder={props.recorder}
             userMic={props.userMic}
             tracksLength={longestTrack}
             setTracksLength={handleLongestTrack}
             player={player}
+            deleteTrack={deleteTrack}
           />;
         })}
         {STDataList.map((data, index) => {
@@ -157,6 +170,7 @@ const Editor: React.FC<Props> = (props) => {
             setActiveChords={setSTActiveChords}
             setChordsOrder={setSTChordsOrder}
             setSynth={setSTSynth}
+            deleteTrack={deleteTrack}
           />
         })}
       </Box>}

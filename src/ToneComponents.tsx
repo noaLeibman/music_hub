@@ -184,6 +184,10 @@ class PeaksPlayer {
       }
     });
   }
+
+  dispose() {
+    this.player?.externalPlayer.dispose();
+  }
 }
 
 class Player {
