@@ -18,14 +18,15 @@ type Props = {
     tracksLength: number;
     setTracksLength: (value: number) => void;
     deleteTrack: (idx: number, type: string) => void;
+    url: string | undefined;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
-    // const [track, setTrack] = useState<string>('');
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [slice, setSlice] = useState<boolean>(false);
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
+    const [playerLoaded, setPlayerLoaded] = useState<boolean>(false)
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
@@ -47,14 +48,26 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             }
             await userMic.open();
             userMic.connect(recorder);
+            if (props.url && !playerLoaded) {
+                setPlayerLoaded(true);
+                await props.player?.load(props.url, zoomRef, overviewRef);
+                const length = props.player?.player?.getBuffer()?.duration;
+                if ( length && length > props.tracksLength) {
+                    props.setTracksLength(length);
+                }
+                console.log(props.player.loaded);
+            }
         }  
       
         initProps();
-    }, [props]);
+    }, [props, playerLoaded]);
 
     useEffect(() => {
-        props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});
-        console.log('in recorded track useEffect: ' + props.tracksLength);
+        try {
+          props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});  
+        } catch (e) {
+            console.log(e);
+        }
     }, [props.tracksLength, props.player]);
 
     const startRecording = () => {

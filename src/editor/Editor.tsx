@@ -6,8 +6,8 @@ import React, { useEffect, useState } from "react";
 import * as Tone from 'tone';
 import {WaveformPlayer, Recorder, UserMedia, PeaksPlayer} from "../ToneComponents";
 import Metronome from './Metronome';
-import RecordedTrack from "./RecordedTrack"
-import SynthTrack from './SynthTrack';
+import RecordedTrack from "./RecordedTrack";
+import {SynthTrack, chordToNotes} from './SynthTrack';
 
 const useStyles = makeStyles({
   root: {
@@ -48,37 +48,83 @@ export type ChordData = {
 }
 
 type STData = {
-    synth: Tone.PolySynth;
-    activeChords: Map<number,ChordData>;
-    chordsOrder: number[];
+  synth: Tone.PolySynth;
+  activeChords: Map<number,ChordData>;
+  chordsOrder: number[];
+  length: number;
+}
+
+type RTData = {
+  player: PeaksPlayer;
+  url: string | undefined;
+}
+
+type SynthData = {
+  chords: ChordData[];
+  order: number[];
+}
+
+type ProjectJson = {
+  recordedUrls: string[];
+  synthTracks: SynthData[];
+  length: number;
+}
+
+const testProject: ProjectJson = {
+  recordedUrls: ['https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/The+Beatles+-+Penny+Lane.mp3'],
+  synthTracks: [{
+    chords: [
+      {
+        id: 1,
+        name: 'A',
+        duration: 1,
+        durationStr: '1',
+        startTime: 0,
+      },
+      {
+        id: 2,
+        name: 'C',
+        duration: 1,
+        durationStr: '1',
+        startTime: 1,
+      }
+    ],
+    order: [1, 2],
+  }],
+  length: 10,
 }
 
 const Editor: React.FC<Props> = (props) => {
-  const [RTPlayers, setRTPlayers] = useState<PeaksPlayer[]>([]);
-  const [STDataList, setSTDataList] = useState<STData[]>([]);
+  const [recordedTracks, setRecordedTracks] = useState<RTData[]>([]);
+  const [synthTracks, setSynthTracks] = useState<STData[]>([]);
   const [longestTrack, setLongestTrack] = useState<number>(0);
 
   const classes = useStyles();
 
   useEffect(() => {
-    console.log('in Editor useEffect: ' + longestTrack);
-  }, [longestTrack])
+    createFromJson(testProject);
+  }, []);
 
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
   }
 
   const addRecordedTrack = () => {
-    setRTPlayers([...RTPlayers, new PeaksPlayer()]);
+    const track = {
+      player: new PeaksPlayer(),
+      url: undefined,
+    }
+    setRecordedTracks([...recordedTracks, track]);
   }
 
   const addSynthTrack = () => {
     const newTrack: STData = {
       synth: new Tone.PolySynth().toDestination(),
       chordsOrder: [],
-      activeChords: new Map()
+      activeChords: new Map(),
+      length: 0,
     };
-    setSTDataList([...STDataList, newTrack]);
+    setSynthTracks([...synthTracks, newTrack]);
   }
   
   const play = () => {
@@ -98,33 +144,65 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const setSTChordsOrder = (newOrder: number[], idx: number) => {
-    const copy = [...STDataList];
+    const copy = [...synthTracks];
     copy[idx].chordsOrder = newOrder;
-    setSTDataList(copy);
+    setSynthTracks(copy);
   }
 
   const setSTActiveChords = (newActiveChords: Map<number,ChordData>, idx: number) => {
-    const copy = [...STDataList];
+    const copy = [...synthTracks];
     copy[idx].activeChords = newActiveChords;
-    setSTDataList(copy);
+    setSynthTracks(copy);
   }
 
   const setSTSynth = (newSynth: Tone.PolySynth, idx: number) => {
-    const copy = [...STDataList];
+    const copy = [...synthTracks];
     copy[idx].synth = newSynth;
-    setSTDataList(copy);
+    setSynthTracks(copy);
   }
 
   const deleteTrack = (idx : number, type: string) => {
     if (type === 'synth') {
-      const copy = [...STDataList];
+      const copy = [...synthTracks];
       copy.splice(idx, 1);
-      setSTDataList(copy);
+      setSynthTracks(copy);
     } else {
-      const copy = [...RTPlayers];
+      const copy = [...recordedTracks];
       copy.splice(idx, 1);
-      setRTPlayers(copy);
+      setRecordedTracks(copy);
     }
+  }
+
+  const createFromJson = (json: ProjectJson) => {
+    const rTracks: RTData[] = json.recordedUrls.map((url: string, index: number) => {
+      return  {
+        player: new PeaksPlayer(),
+        url: url,
+      }
+    });
+    const sTracks: STData[] = json.synthTracks.map((data: SynthData, index: number) => {
+      const newMap = new Map();
+      const newSynth = new Tone.PolySynth().toDestination();
+      newSynth.sync();
+      let length = 0;
+      data.chords.forEach((chord: ChordData) => {
+        length += chord.duration;
+        newMap.set(chord.id, chord);
+        const notes = chordToNotes.get(chord.name);
+        if (!notes) return;
+        newSynth.triggerAttackRelease(notes, chord.durationStr, chord.startTime);
+      })
+      return {
+        activeChords: newMap,
+        chordsOrder: data.order,
+        synth: newSynth,
+        length: length,
+        key: index,
+      }
+    });
+    setLongestTrack(json.length);
+    setRecordedTracks(rTracks);
+    setSynthTracks(sTracks);
   }
 
   return (
@@ -147,22 +225,23 @@ const Editor: React.FC<Props> = (props) => {
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addSynthTrack}>Add synth track</Button>
         </Box>
       </div>
-      {(RTPlayers.length !==0 || STDataList.length !== 0)  && <Box className={classes.tracksContainer}>
-        {RTPlayers.map((player, index) => {
+      {(recordedTracks.length !==0 || synthTracks.length !== 0)  && <Box className={classes.tracksContainer}>
+        {recordedTracks.map((data, index) => {
           return <RecordedTrack
             id={index} 
             recorder={props.recorder}
             userMic={props.userMic}
             tracksLength={longestTrack}
             setTracksLength={handleLongestTrack}
-            player={player}
+            player={data.player}
+            url={data.url}
             deleteTrack={deleteTrack}
           />;
         })}
-        {STDataList.map((data, index) => {
+        {synthTracks.map((data, index) => {
           return <SynthTrack
             id={index}
-            tracksLength={longestTrack}
+            initialLength={data.length}
             setTracksLength={setLongestTrack}
             activeChords={data.activeChords}
             chordsOrder={data.chordsOrder}

@@ -39,7 +39,7 @@ const colors = ['#f0ccc9', '#f5e1cb', '#edebc7', '#d7e8be', '#c8e6e3', '#c3e3e0'
 
 type Props = {
     id: number;
-    tracksLength: number;
+    initialLength: number;
     setTracksLength: (value: number) => void;
     synth: Tone.PolySynth;
     activeChords: Map<number,ChordData>;
@@ -83,14 +83,11 @@ const SynthTrack: React.FC<Props> = (props) => {
             startTime: currEndTime
         };
         synth.triggerAttackRelease(notes, duration, currEndTime);
-        // console.log('end time:' + (currEndTime + Tone.Time(duration).toSeconds()));
-        // console.log(newChord);
         const newEndTime = currEndTime + durationSeconds;
-        if (newEndTime > props.tracksLength) props.setTracksLength(newEndTime);
+        
+        // if (newEndTime > props.tracksLength) props.setTracksLength(newEndTime);
         setActiveChords(new Map(activeChords).set(nextId, newChord), id);
         setChordsOrder([...chordsOrder, nextId], id);
-        //activeChords.set(nextId, newChord);
-        //chordsOrder.push(nextId);
         setCurrEndTime(newEndTime);
         setChordMenuOpen(false);
         setNextId(nextId + 1);
@@ -213,21 +210,25 @@ const SynthTrack: React.FC<Props> = (props) => {
 
     const getChordViews = () => {
         const {chordsOrder, activeChords} = props;
-        console.log('in getChordsView');
         return chordsOrder.map((id, index) => {
             const currData = activeChords.get(id);
-            if (!currData) return null;
+            if (!currData) {
+                console.log('chord not found in map');
+                return null;
+            };
+            const totalTime = currEndTime === 0 ? props.initialLength : currEndTime; 
             return <ChordView
                 chordName={currData.name}
                 id={id}
-                width={widthRef.current ? widthRef.current.offsetWidth * (currData.duration / currEndTime) : 0}
+                width={widthRef.current ? widthRef.current.offsetWidth * (currData.duration / totalTime) : 0}
                 duration={currData.duration}
                 onStop={onChordMoved}
-                position={widthRef.current ? widthRef.current.offsetWidth * (currData.startTime / currEndTime) : 0}
+                position={widthRef.current ? widthRef.current.offsetWidth * (currData.startTime / totalTime) : 0}
                 startTime={currData.startTime}
                 wholeTrackWidth={widthRef.current ? widthRef.current.offsetWidth : 0}
                 color={colors[index]}
                 deleteChord={deleteChord}
+                key={index}
             />
         })   
     }
@@ -267,13 +268,13 @@ const SynthTrack: React.FC<Props> = (props) => {
                 </Popover>
             </Grid>
             <Grid item xs={11} ref={widthRef}>
-                <Box display="flex" flexDirection="row" height="100px">
-                    {getChordViews()}
-                </Box>
+                <div style={{display: 'flex', justifyContent: 'flex-start', height: '100px'}}>
+                    {widthRef.current && getChordViews()}
+                </div>
             </Grid>
           </Grid>
       </Card>
     );
 }
 
-export default SynthTrack;
+export {SynthTrack, chordToNotes};

@@ -100,6 +100,7 @@ class PeaksPlayer {
   peaks: PeaksInstance | undefined;
   player: Player | undefined;
   options: any;
+  loaded: boolean;
 
   constructor() {
     // this.zoomRef = props.zoomRef;
@@ -108,9 +109,11 @@ class PeaksPlayer {
     this.overviewRef = undefined;
     this.peaks = undefined;
     this.player = undefined;
+    this.loaded = false;
   }
 
   async load(url: string, newZoomRef: any, newOverviewRef: any) {
+    console.log('load start');
     if (!this.player) {
       this.player = new Player();
       await this.player.externalPlayer.load(url);
@@ -143,6 +146,7 @@ class PeaksPlayer {
         } else {
           this.peaks = peaks;
           console.log('peaks initialized');
+          this.loaded = true;
         }
       });
     } else {
