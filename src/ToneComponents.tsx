@@ -216,9 +216,9 @@ class Player {
     Tone.Transport.schedule(() => {
       this.play();
     }, 0);
-    Tone.Transport.on('stop', () => {
-      this.seek(0);
-    })
+    // Tone.Transport.on('stop', () => {
+    //   this.seek(0);
+    // })
   }
 
   destroy() {

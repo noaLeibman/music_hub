@@ -1,15 +1,16 @@
 import { Button, Card, CardActions, CardContent, IconButton, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import React, { useRef, useState } from 'react';
-import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
+import React, { useEffect, useRef, useState } from 'react';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
-import SkipNextIcon from '@material-ui/icons/SkipNext';
-import { WaveformPlayer } from './ToneComponents';
+import { PeaksInstance } from 'peaks.js'
 
-type Props = {
-    player: WaveformPlayer | undefined;
+type ProjectProps = {
     url: string;
+    projectName: string;
+    authorName: string;
+    description: string;
+    peaks: PeaksInstance;
 }
 
 const useStyles = makeStyles({
@@ -37,41 +38,20 @@ const useStyles = makeStyles({
     },
   });
   
-const ProjectCard: React.FC<Props> = (props) => {
+const ProjectCard: React.FC<ProjectProps> = (props) => {
     const classes = useStyles();
     const [playing, setPlaying] = useState<boolean>(false);
     const [loaded, setLoaded] = useState<boolean>(false);
     const waveformRef = useRef(null);
+    const dummyRef = useRef(null);
 
-    // useEffect(() => {
-    //     if (props.player) {
-    //         props.player.init(waveformRef.current);
-    //         props.player.sync().start(0);
-    //     }
-    // },[props.player])
-
-    const onClickPlay = async () => {
-        if (!props.player) return;
-        if (!props.player.getWavesurfer()) {
-            props.player.init(waveformRef.current);
-            props.player.sync();
-        }
+    const onClickPlay = () => {
         if (playing) {
-            props.player.pause()
+            props.peaks.player.pause();
             setPlaying(false);
         } else {
-            if (!loaded) {
-                props.player.getWavesurfer().on("ready", function() {
-                    props.player?.play();
-                    console.log('on ready');
-                    setPlaying(true);
-                    setLoaded(true);
-                })
-                await props.player.load(props.url);
-            } else {
-                props.player.play();
-                setPlaying(true);
-            }
+            props.peaks.player.play();
+            setPlaying(true);
         }
     }
 
@@ -89,23 +69,17 @@ const ProjectCard: React.FC<Props> = (props) => {
                     Description, bla bla bla.
                     </Typography>
                 </CardContent>
-                {/* {player && <Waveform
-                    color='black'
-                    height={100}
-                    width={500}
-                    buffer={player?.buffer.get()}
-                />} */}
                 <div ref={waveformRef}/>
                 <div className={classes.controls}>
-                    <IconButton aria-label="previous">
+                    {/* <IconButton aria-label="previous">
                         <SkipPreviousIcon />
-                    </IconButton>
+                    </IconButton> */}
                     <IconButton aria-label="play/pause" onClick={onClickPlay}>
                        { playing ? <PauseIcon className={classes.playIcon} />: <PlayArrowIcon className={classes.playIcon} />}
                     </IconButton>
-                    <IconButton aria-label="next">
+                    {/* <IconButton aria-label="next">
                     <SkipNextIcon />
-                    </IconButton>
+                    </IconButton> */}
                 </div>
                 <CardActions className={classes.cardButton} >
                     <Button size="small" variant="contained" color="primary">Learn More</Button>
@@ -115,4 +89,5 @@ const ProjectCard: React.FC<Props> = (props) => {
     );
 };
 
-export default ProjectCard;
+export { ProjectCard };
+export type { ProjectProps };

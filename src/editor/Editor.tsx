@@ -8,6 +8,7 @@ import {WaveformPlayer, Recorder, UserMedia, PeaksPlayer} from "../ToneComponent
 import Metronome from './Metronome';
 import RecordedTrack from "./RecordedTrack";
 import {SynthTrack, chordToNotes} from './SynthTrack';
+import UploadedTrack from './UploadedTrack';
 
 const useStyles = makeStyles({
   root: {
@@ -59,6 +60,10 @@ type RTData = {
   url: string | undefined;
 }
 
+type UTData = {
+  player: PeaksPlayer;
+}
+
 type SynthData = {
   chords: ChordData[];
   order: number[];
@@ -97,13 +102,14 @@ const testProject: ProjectJson = {
 const Editor: React.FC<Props> = (props) => {
   const [recordedTracks, setRecordedTracks] = useState<RTData[]>([]);
   const [synthTracks, setSynthTracks] = useState<STData[]>([]);
+  const [uploadedTracks, setUploadedTracks] = useState<UTData[]>([]);
   const [longestTrack, setLongestTrack] = useState<number>(0);
 
   const classes = useStyles();
 
-  useEffect(() => {
-    createFromJson(testProject);
-  }, []);
+  // useEffect(() => {
+  //   createFromJson(testProject);
+  // }, []);
 
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
@@ -125,6 +131,10 @@ const Editor: React.FC<Props> = (props) => {
       length: 0,
     };
     setSynthTracks([...synthTracks, newTrack]);
+  }
+
+  const addUploadedTrack = () => {
+    setUploadedTracks([...uploadedTracks, {player: new PeaksPlayer()}])
   }
   
   const play = () => {
@@ -166,10 +176,14 @@ const Editor: React.FC<Props> = (props) => {
       const copy = [...synthTracks];
       copy.splice(idx, 1);
       setSynthTracks(copy);
-    } else {
+    } else if (type === 'recorded') {
       const copy = [...recordedTracks];
       copy.splice(idx, 1);
       setRecordedTracks(copy);
+    } else if (type === 'uploaded') {
+      const copy = [...uploadedTracks];
+      copy.splice(idx, 1);
+      setUploadedTracks(copy);
     }
   }
 
@@ -223,36 +237,46 @@ const Editor: React.FC<Props> = (props) => {
           </ButtonGroup>
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addRecordedTrack}>Add recording track</Button>
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addSynthTrack}>Add synth track</Button>
+          <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addUploadedTrack}>Add track for uploading</Button>
         </Box>
       </div>
-      {(recordedTracks.length !==0 || synthTracks.length !== 0)  && <Box className={classes.tracksContainer}>
-        {recordedTracks.map((data, index) => {
-          return <RecordedTrack
-            id={index} 
-            recorder={props.recorder}
-            userMic={props.userMic}
-            tracksLength={longestTrack}
-            setTracksLength={handleLongestTrack}
-            player={data.player}
-            url={data.url}
-            deleteTrack={deleteTrack}
-          />;
-        })}
-        {synthTracks.map((data, index) => {
-          return <SynthTrack
-            id={index}
-            initialLength={data.length}
-            setTracksLength={setLongestTrack}
-            activeChords={data.activeChords}
-            chordsOrder={data.chordsOrder}
-            synth={data.synth}
-            setActiveChords={setSTActiveChords}
-            setChordsOrder={setSTChordsOrder}
-            setSynth={setSTSynth}
-            deleteTrack={deleteTrack}
-          />
-        })}
-      </Box>}
+      {(recordedTracks.length !==0 || synthTracks.length !== 0 || uploadedTracks.length !== 0) && 
+        <Box className={classes.tracksContainer}>
+          {recordedTracks.map((data, index) => {
+            return <RecordedTrack
+              id={index} 
+              recorder={props.recorder}
+              userMic={props.userMic}
+              tracksLength={longestTrack}
+              setTracksLength={handleLongestTrack}
+              player={data.player}
+              url={data.url}
+              deleteTrack={deleteTrack}
+            />;
+          })}
+          {synthTracks.map((data, index) => {
+            return <SynthTrack
+              id={index}
+              initialLength={data.length}
+              setTracksLength={setLongestTrack}
+              activeChords={data.activeChords}
+              chordsOrder={data.chordsOrder}
+              synth={data.synth}
+              setActiveChords={setSTActiveChords}
+              setChordsOrder={setSTChordsOrder}
+              setSynth={setSTSynth}
+              deleteTrack={deleteTrack}
+            />
+          })}
+          {uploadedTracks.map((data, index) => {
+            return <UploadedTrack
+              player={data.player}
+              id={index}
+              deleteTrack={deleteTrack}
+            />
+          })}
+        </Box>
+      }
     </Box>
   );
 }
