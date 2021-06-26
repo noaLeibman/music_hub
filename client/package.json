@@ -5,6 +5,7 @@
   "dependencies": {
     "@material-ui/core": "^4.11.3",
     "@material-ui/icons": "^4.11.2",
+    "@material-ui/lab": "*",
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.5",
     "@testing-library/user-event": "^12.8.3",
@@ -12,8 +13,10 @@
     "@types/node": "^12.20.6",
     "@types/react": "^17.0.3",
     "@types/react-dom": "^17.0.2",
+    "axios-oauth-client": "^1.4.2",
     "material-ui-search-bar": "^1.0.0",
     "peaks.js": "^0.25.0",
+    "qs-stringify": "^1.2.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-draggable": "^4.4.3",
@@ -49,6 +52,7 @@
   },
   "devDependencies": {
     "@types/wavesurfer.js": "^3.3.2",
-    "audio-buffer-utils": "^5.1.2"
+    "audio-buffer-utils": "^5.1.2",
+    "axios": "^0.21.1"
   }
 }

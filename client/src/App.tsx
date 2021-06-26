@@ -16,7 +16,7 @@ import Editor from './editor/Editor';
 import axios from 'axios';
 import oauth from 'axios-oauth-client';
 import qs from 'qs-stringify';
-import { Recorder, startTone, UserMedia, WaveformPlayer } from './ToneComponents';
+import { Recorder, startTone, UserMedia } from './ToneComponents';
 import { stringify } from 'node:querystring';
 import queryStringify from 'qs-stringify';
 
@@ -265,7 +265,7 @@ const App = () => {
     
   }
     return (
-      <div className="App" onClick={player ? (() => {}) : initState}>
+      <div className="App">
         <Box style={{height: '100%'}}>
           {getMenuDrawer()}
           <AppBar position="static" color='primary'>
@@ -350,12 +350,12 @@ const App = () => {
           </AppBar>
           { selectedPage === Main && 
             <MainFeed
-              player={undefined}
+              // player={undefined}
             />   
           }
           { selectedPage === Create && 
             <Editor 
-              player={player}
+              // player={player}
               recorder={recorder}
               userMic={userMic}
             />  
