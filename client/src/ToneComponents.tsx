@@ -1,5 +1,4 @@
 import * as Tone from 'tone';
-import WaveSurfer from "wavesurfer.js";
 import Peaks, { PeaksInstance } from 'peaks.js'
 
 async function startTone() {
@@ -49,48 +48,6 @@ class Effects {
 
   static getDistortion() {
     return new Tone.Distortion(0.8).toDestination();
-  }
-}
-
-class WaveformPlayer extends Tone.Player {
-  waveSurfer!: WaveSurfer;
-
-  init(ref: any) {
-    this.waveSurfer = WaveSurfer.create({
-      container: ref,
-      waveColor: 'violet',
-      progressColor: 'purple',
-      responsive: true,
-      partialRender: true
-    });
-  }
-
-  sync() {
-    this.context.transport.on("start", () => {this.waveSurfer.play()});
-    this.context.transport.on("stop", () => {this.waveSurfer.stop()});
-    this.context.transport.on("pause", () => {this.waveSurfer.pause()});
-    return this;
-  }
-
-  load(url: string) {
-    this.waveSurfer.load(url);
-    return new Promise<this>(() => {});
-  }
-
-  play() {
-    Tone.Transport.start();
-  }
-
-  pause() {
-    Tone.Transport.pause();
-  }
-
-  stop_() {
-    Tone.Transport.stop();
-  }
-
-  getWavesurfer() {
-    return this.waveSurfer;
   }
 }
 
@@ -264,4 +221,4 @@ class Player {
 };
 
 
-export {PeaksPlayer, Player, UserMedia, Recorder, startTone, Effects, WaveformPlayer};
+export {PeaksPlayer, Player, UserMedia, Recorder, startTone, Effects};

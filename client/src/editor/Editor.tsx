@@ -4,7 +4,7 @@ import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
 import React, { useEffect, useState } from "react";
 import * as Tone from 'tone';
-import {WaveformPlayer, Recorder, UserMedia, PeaksPlayer} from "../ToneComponents";
+import {Recorder, UserMedia, PeaksPlayer} from "../ToneComponents";
 import Metronome from './Metronome';
 import RecordedTrack from "./RecordedTrack";
 import {SynthTrack, chordToNotes} from './SynthTrack';
@@ -35,7 +35,7 @@ const useStyles = makeStyles({
 });
 
 type Props = {
-  player: WaveformPlayer | undefined;
+  // player: WaveformPlayer | undefined;
   recorder: Recorder | undefined;
   userMic: UserMedia | undefined;
 }

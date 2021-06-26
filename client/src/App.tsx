@@ -12,7 +12,7 @@ import MailIcon from '@material-ui/icons/Mail';
 //import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import MainFeed from './MainFeed';
 import Editor from './editor/Editor';
-import { Recorder, startTone, UserMedia, WaveformPlayer } from './ToneComponents';
+import { Recorder, startTone, UserMedia } from './ToneComponents';
 
 enum MenuItems {
   Main = "Main Feed",
@@ -25,7 +25,7 @@ const App = () => {
   const [selectedPage, setSelectedPage] = useState<string>(Main);
   const [searchText, setSearchText] = useState<string>("");
   const [menuState, setMenuState] = useState<boolean>(false);
-  const [player, setPlayer] = useState<WaveformPlayer>();
+  // const [player, setPlayer] = useState<WaveformPlayer>();
   const [recorder, setRecorder] = useState<Recorder>();
   const [userMic, setUserMic] = useState<UserMedia>();
 
@@ -34,8 +34,8 @@ const App = () => {
 
   const initState = async () => {
     await startTone();
-    const player = new WaveformPlayer().toDestination();
-    setPlayer(player);
+    // const player = new WaveformPlayer().toDestination();
+    // setPlayer(player);
     setRecorder(new Recorder());
     setUserMic(new UserMedia());
   }
@@ -70,7 +70,7 @@ const App = () => {
   };
 
     return (
-      <div className="App" onClick={player ? (() => {}) : initState}>
+      <div className="App" onClick={() => {}}>
         <Box style={{height: '100%'}}>
           {getMenuDrawer()}
           <AppBar position="static" color='primary'>
@@ -97,12 +97,12 @@ const App = () => {
           </AppBar>
           { selectedPage === Main && 
             <MainFeed
-              player={undefined}
+              // player={undefined}
             />   
           }
           { selectedPage === Create && 
             <Editor 
-              player={player}
+              // player={player}
               recorder={recorder}
               userMic={userMic}
             />  
