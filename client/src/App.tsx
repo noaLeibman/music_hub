@@ -52,11 +52,13 @@ const App = () => {
 
   const initState = async () => {
     await startTone();
-    // const player = new WaveformPlayer().toDestination();
-    // setPlayer(player);
     setRecorder(new Recorder());
     setUserMic(new UserMedia());
   }
+
+  useEffect(() => {
+    initState();
+  }, [])
 
   const toggleDrawer = (open: boolean) => (
     event: React.KeyboardEvent | React.MouseEvent,
@@ -235,25 +237,28 @@ const App = () => {
 
 
   const createProjectThenSet = () => {
-    const data = {project_name: projectname, email: signupemail}
-    fetch('http://127.0.0.1:8000/create_project/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-    .then(response => response.json())
-  .then(data => {
-    console.log('Success:', data);
     setMenuState(false);
     setCreateProject(false);
     setSelectedPage(Create);
-    })
+  //   const data = {project_name: projectname, email: signupemail}
+  //   fetch('http://127.0.0.1:8000/create_project/', {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: JSON.stringify(data),
+  //   })
+  //   .then(response => response.json())
+  // .then(data => {
+  //   console.log('Success:', data);
+  //   setMenuState(false);
+  //   setCreateProject(false);
+  //   setSelectedPage(Create);
+  //   })
     
-  .catch((error) => {
-    console.error('Error:', error);
-  });
+  // .catch((error) => {
+  //   console.error('Error:', error);
+  // });
   } 
   const tryMe = () => {
     axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true})
@@ -329,7 +334,6 @@ const App = () => {
                     onClose = {createPopover(false)}>
                       <Box display="flex" flexDirection="column">
                         <TextField label=" Project name:" value={projectname} onChange = {handleProjectNameChange}/>
-                        
                         <Button onClick={createProjectThenSet}>Apply</Button>
                     </Box>  
               </Popover>

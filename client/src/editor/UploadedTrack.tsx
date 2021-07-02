@@ -12,6 +12,8 @@ type Props = {
     id: number;
     player: PeaksPlayer;
     deleteTrack: (idx: number, type: string) => void;
+    sendEffect: (effect: string, trackType: string, id: number) => void;
+    slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
 }
 
 const baseStyle = {
@@ -63,16 +65,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
       });
 
     const addEffect = (effect: string) => {
-        const {player} = props;
-        if (!player) {
-            console.log('player undefined');
-            return;
-        }
-        if (effect === 'reverb') {
-           player.connect(Effects.getReverb(3));
-        } else if (effect === 'distortion') {
-            player.connect(Effects.getDistortion()); 
-        }
+        props.sendEffect(effect, 'recorded', props.id);
     }
 
     const handleSliceFrom = (e: any) => {
@@ -84,21 +77,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     }
 
     const sliceTrack = () => {
-        const {player} = props;
-        if (sliceFrom === sliceTo) {
-            setSlice(false);
-            return;
-        }
-        const buffer1 = player?.player?.getBuffer()?.slice(0, sliceFrom);
-        const buffer2 = player?.player?.getBuffer()?.slice(sliceTo);
-        if (!(buffer1 && buffer2)) {
-            console.log('in sliceTrack: buffers are empty');
-            return;
-        }
-        const newBuffer = utils.concat(buffer1.get(), buffer2.get());
-        utils.concat(buffer1.get(), buffer2.get());
-        player?.player?.getBuffer().set(newBuffer);
-        player?.setPeaksBuffer(newBuffer);
+        props.slice(sliceFrom, sliceTo, 'recorded', props.id);
         setSlice(false);
         setSliceFrom(0);
         setSliceTo(0);

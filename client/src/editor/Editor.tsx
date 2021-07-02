@@ -4,11 +4,13 @@ import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
 import React, { useEffect, useState } from "react";
 import * as Tone from 'tone';
-import {Recorder, UserMedia, PeaksPlayer} from "../ToneComponents";
+import {Recorder, UserMedia, PeaksPlayer, Effects} from "../ToneComponents";
 import Metronome from './Metronome';
 import RecordedTrack from "./RecordedTrack";
 import {SynthTrack, chordToNotes} from './SynthTrack';
 import UploadedTrack from './UploadedTrack';
+import * as utils from 'audio-buffer-utils';
+import { PolySynth } from 'tone';
 
 const useStyles = makeStyles({
   root: {
@@ -35,7 +37,6 @@ const useStyles = makeStyles({
 });
 
 type Props = {
-  // player: WaveformPlayer | undefined;
   recorder: Recorder | undefined;
   userMic: UserMedia | undefined;
 }
@@ -75,6 +76,19 @@ type ProjectJson = {
   length: number;
 }
 
+type actionsJson = {
+  trackType: string;
+  trackId: number;
+  effect?: string;
+  sliceFrom?: number;
+  sliceTo?: number;
+  chordsOrder?: number[];
+  chords?: {
+    id: number;
+    data: ChordData;
+  }[];
+}
+
 const testProject: ProjectJson = {
   recordedUrls: ['https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/The+Beatles+-+Penny+Lane.mp3'],
   synthTracks: [{
@@ -106,10 +120,6 @@ const Editor: React.FC<Props> = (props) => {
   const [longestTrack, setLongestTrack] = useState<number>(0);
 
   const classes = useStyles();
-
-  // useEffect(() => {
-  //   createFromJson(testProject);
-  // }, []);
 
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
@@ -171,6 +181,46 @@ const Editor: React.FC<Props> = (props) => {
     setSynthTracks(copy);
   }
 
+  const addEffect = (effect: string, trackType: string, id: number) => {
+    let player;
+    if (trackType === 'recorded') {
+      player = recordedTracks[id].player;
+    } else if (trackType === 'uploaded') {
+      player = uploadedTracks[id].player;
+    }
+    if (!player) {
+        console.log('player undefined');
+        return;
+    }
+    if (effect === 'reverb') {
+       player.connect(Effects.getReverb(3));
+    } else if (effect === 'distortion') {
+        player.connect(Effects.getDistortion()); 
+    }
+  }
+
+  const sliceTrack = (sliceFrom: number, sliceTo: number, trackType: string, id: number) => {
+    if (sliceFrom === sliceTo) {
+      return;
+    }
+    let player;
+    if (trackType === 'recorded') {
+      player = recordedTracks[id].player;
+    } else if (trackType === 'uploaded') {
+      player = uploadedTracks[id].player;
+    }
+    const buffer1 = player?.player?.getBuffer()?.slice(0, sliceFrom);
+    const buffer2 = player?.player?.getBuffer()?.slice(sliceTo);
+    if (!(buffer1 && buffer2)) {
+        console.log('in sliceTrack: buffers are empty');
+        return;
+    }
+    const newBuffer = utils.concat(buffer1.get(), buffer2.get());
+    utils.concat(buffer1.get(), buffer2.get());
+    player?.player?.getBuffer().set(newBuffer);
+    player?.setPeaksBuffer(newBuffer);
+  }
+
   const deleteTrack = (idx : number, type: string) => {
     if (type === 'synth') {
       const copy = [...synthTracks];
@@ -219,6 +269,55 @@ const Editor: React.FC<Props> = (props) => {
     setSynthTracks(sTracks);
   }
 
+  const sendToServer  = () => {
+
+  }
+
+  const receiveAction = (changes: actionsJson) => {
+    if (!changes || !changes.trackId) {
+      console.log('no track ID sent from server');
+      return;
+    }
+    let track: RTData | STData | UTData;
+    if (changes.trackType === 'recorded' || changes.trackType === 'uploaded') {
+      track = changes.trackType === 'recorded' ? recordedTracks[changes.trackId] : uploadedTracks[changes.trackId];;
+      if (changes.effect) {
+        addEffect(changes.effect, changes.trackType, changes.trackId);
+      }
+      if (changes.sliceFrom && changes.sliceTo) {
+        if (changes.sliceFrom < changes.sliceTo) {
+          sliceTrack(changes.sliceFrom, changes.sliceTo, changes.trackType, changes.trackId);
+        }
+      }
+    } else if (changes.trackType === 'synth') {
+      track = synthTracks[changes.trackId];
+      if (changes.chords && changes.chordsOrder) {
+        setSTChordsOrder(changes.chordsOrder, changes.trackId);
+        const chordsMap = new Map<number, ChordData>();
+        const synth = new PolySynth();
+        synth.sync();
+        let length: number = 0;
+        changes.chords.forEach((item) => {
+          chordsMap.set(item.id, item.data);
+        })
+        changes.chordsOrder.forEach((chord) => {
+          let data = chordsMap.get(chord);
+          if (!data) return;
+          let notes = chordToNotes.get(data.name);
+          if (!notes) return;
+          synth.triggerAttackRelease(notes, data.duration, length);
+          length += data.duration;
+        })
+        setSTActiveChords(chordsMap, changes.trackId);
+        setSTChordsOrder(changes.chordsOrder, changes.trackId);
+        setSTSynth(synth, changes.trackId);
+      }
+    } else {
+      console.log('wrong track type was sent from server: ' + changes.trackType);
+      return;
+    }
+  }
+
   return (
     <Box>
       <div style={{width: '120px', float: 'left'}}>
@@ -252,6 +351,8 @@ const Editor: React.FC<Props> = (props) => {
               player={data.player}
               url={data.url}
               deleteTrack={deleteTrack}
+              slice={sliceTrack}
+              sendEffect={addEffect}
             />;
           })}
           {synthTracks.map((data, index) => {
@@ -273,6 +374,8 @@ const Editor: React.FC<Props> = (props) => {
               player={data.player}
               id={index}
               deleteTrack={deleteTrack}
+              slice={sliceTrack}
+              sendEffect={addEffect}
             />
           })}
         </Box>
