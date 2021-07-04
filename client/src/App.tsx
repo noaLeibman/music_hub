@@ -353,15 +353,13 @@ const App = () => {
             </Toolbar>
           </AppBar>
           { selectedPage === Main && 
-            <MainFeed
-              // player={undefined}
-            />   
+            <MainFeed />   
           }
           { selectedPage === Create && 
             <Editor 
-              // player={player}
               recorder={recorder}
               userMic={userMic}
+              projectId={"1234"}
             />  
           }
         </Box>

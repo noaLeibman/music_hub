@@ -39,6 +39,7 @@ const useStyles = makeStyles({
 type Props = {
   recorder: Recorder | undefined;
   userMic: UserMedia | undefined;
+  projectId: string;
 }
 
 export type ChordData = {
@@ -76,7 +77,8 @@ type ProjectJson = {
   length: number;
 }
 
-type actionsJson = {
+type ActionsJson = {
+  projectId: string;
   trackType: string;
   trackId: number;
   effect?: string;
@@ -118,9 +120,39 @@ const Editor: React.FC<Props> = (props) => {
   const [synthTracks, setSynthTracks] = useState<STData[]>([]);
   const [uploadedTracks, setUploadedTracks] = useState<UTData[]>([]);
   const [longestTrack, setLongestTrack] = useState<number>(0);
+  const [webSocket, setWebSocket] = useState<WebSocket>();
 
   const classes = useStyles();
 
+  useEffect(() => {
+    const ws = new WebSocket("https://localhost:8080");
+    ws.onopen = () => {
+      console.log('web socket open');
+    }
+    ws.onmessage = (message: MessageEvent<any>) => {
+      const json = parseActionJson(message);
+      if (json !== undefined) {
+        receiveAction(json);
+      }
+      console.log(message);
+    }
+    ws.onclose = () => {
+      console.log('web socket closed');
+    }
+    ws.onerror = (err: Event) => {
+      console.log(
+          "Socket encountered error: " +
+          err +
+          ", Closing socket"
+      );
+      ws.close();
+    };
+    ws.onclose = () => {
+      console.log('web socket closing');
+    }
+    setWebSocket(ws);
+  }, [])
+  
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
   }
@@ -269,18 +301,49 @@ const Editor: React.FC<Props> = (props) => {
     setSynthTracks(sTracks);
   }
 
-  const sendToServer  = () => {
-
+  const parseActionJson = (json: any) => {
+    if (!json || !json.trackId || !json.trackType || json.projectId) {
+      console.log('wrong json was sent from server: ' + json);
+      return undefined;
+    }
+    const chordsMap = new Map<number, ChordData>();
+    json.chords.forEach((item: any) => {
+      if (item.id && item.data) {
+        chordsMap.set(item.id, item.data);
+      }
+    })
+    const actionsJson: ActionsJson = {
+      projectId: json.projectId,
+      trackId: json.trackId,
+      trackType: json.trackType,
+      effect: json.effect ? json.effect : undefined,
+      sliceFrom: json.sliceFrom ? json.sliceFrom : undefined,
+      sliceTo: json.sliceTo ? json.sliceTo : undefined,
+      chords: json.chords ? json.chords.map((item: any) => {
+        return {
+          id: item.id,
+          data: item.data,
+        }
+      }) : undefined,
+      chordsOrder: json.chordsOrder ? json.chordsOrder : undefined,
+    }
   }
 
-  const receiveAction = (changes: actionsJson) => {
+  const sendToServer  = (actionData: ActionsJson) => {
+    if (!webSocket || webSocket.CLOSED) {
+      console.log('web socket is undefined or closed');
+    }
+    webSocket?.send(JSON.stringify(actionData));
+  }
+
+  const receiveAction = (changes: ActionsJson) => {
     if (!changes || !changes.trackId) {
       console.log('no track ID sent from server');
       return;
     }
     let track: RTData | STData | UTData;
     if (changes.trackType === 'recorded' || changes.trackType === 'uploaded') {
-      track = changes.trackType === 'recorded' ? recordedTracks[changes.trackId] : uploadedTracks[changes.trackId];;
+      track = changes.trackType === 'recorded' ? recordedTracks[changes.trackId] : uploadedTracks[changes.trackId];
       if (changes.effect) {
         addEffect(changes.effect, changes.trackType, changes.trackId);
       }
