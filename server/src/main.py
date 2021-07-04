@@ -1,32 +1,34 @@
+from datetime import datetime, timedelta
 from typing import List
+from typing import Optional
+from collections import defaultdict
 import bcrypt
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, status
-from fastapi.openapi.models import RequestBody, OAuthFlows
-from fastapi.security.utils import get_authorization_scheme_param
-from fastapi.security import OAuth2
-from sqlalchemy.orm import Session
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, status, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.openapi.models import OAuthFlows
+from fastapi.security import OAuth2
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security.utils import get_authorization_scheme_param
+from fastapi.responses import HTMLResponse
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import queue
+from jose import jwt
+from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
 
 import crud
-import models
 import schemas
-from database import SessionLocal, engine
-from jose import JWTError, jwt
-from typing import Optional
-from datetime import datetime, timedelta
+from database import SessionLocal
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-# models.Base.metadata.create_all(bind=engine)
+ACCESS_TOKEN_EXPIRE_MINUTES = 259200
+
 
 app = FastAPI()
 
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
@@ -40,10 +42,6 @@ app.add_middleware(
 
 SECRET_KEY = "a1ee3de7e92f7ddb85621b7cc63e1ce94e6ba6d9fdb92a58c835f6e3831f49eb"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 # Dependency
@@ -77,35 +75,6 @@ def authenticate_user(email: str, password: str, db: Session = Depends(get_db)):
     return db_user
 
 
-# @app.post("/authenticate", response_model=schemas.Token)
-
-# def authenticate_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-#     db_user = crud.get_user_by_email(db, user.email)
-#     if db_user is None:
-#         raise HTTPException(status_code=400, detail="Username not existed")
-#     else:
-#         is_password_correct = crud.check_username_password(db, user)
-#         if is_password_correct is False:
-#             raise HTTPException(status_code=400, detail="Password is not correct")
-#         else:
-#             from datetime import timedelta
-#             access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-#             from crud import create_access_token
-#             access_token = create_access_token(
-#                 data={"sub": user.email}, expires_delta=access_token_expires)
-#             return {"access_token": access_token, "token_type": "Bearer"}
-# @app.post("/token", response_model=schemas.Token)
-# async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-#     user = authenticate_user(form_data.username, form_data.password, db)
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Incorrect username or password",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-#     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-#     access_token = create_access_token(
-#         data={"sub": user.email}, expires_delta=access_token_expires
 class OAuth2PasswordBearerWithCookie(OAuth2):
     def __init__(
         self,
@@ -171,6 +140,8 @@ async def get_current_active_user(
     return current_user
 
 
+
+
 @app.post("/token")
 async def login_for_access_token(
     response: Response,
@@ -199,6 +170,14 @@ async def read_users_me(
     return current_user
 
 
+@app.get("/project/{mail}")
+async def get_project(mail: str, db: Session = Depends(get_db)):
+    the_user = crud.get_user_by_email(db,email=mail)
+    stuff = the_user.projects_list_uuid
+    return Response(content = stuff)
+
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -219,14 +198,9 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 @app.post("/create_project/", response_model=schemas.Project)
 def create_project(item: schemas.Project, db: Session = Depends(get_db)):
     db_project = crud.get_project_by_name(db, name=item.project_name)
+    # We want unique project names
     if db_project:
         raise HTTPException(status_code=400, detail="Project name already in use")
-    if ";" in item.project_name:
-        raise HTTPException(
-            status_code=400, detail="Project name cannot contain character ;"
-        )
-    # if project name is not already in use, create the project then add the name to the table of the user
-    crud.update_user_created(db, item.email, item.project_name)
     return crud.create_project_2(db=db, project=item)
 
 
@@ -266,6 +240,68 @@ def create_item_for_user(
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
+
+app.queue_system = queue.Queue()
+app.queue_limit = 1
+
+router_manager = dict()
+
+class ConnectionManager():
+    def __init__(self, project_id):
+        self.active_connections: List[WebSocket] = []
+        self.project_id = project_id
+        router_manager[project_id] = self
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket, project_id: str):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+    def getProjectID(self):
+        return self.project_id
+
+
+async def myfunc():
+    for i in range(app.queue_limit):
+        if not app.queue_system.empty():
+            obj = app.queue_system.get_nowait()
+            project_id = obj['project_id']
+            if obj['websocket'] in router_manager[project_id].active_connections:
+                await router_manager[project_id].send_personal_message(f"You wrote: {obj['message']}", obj['websocket'])
+                await router_manager[project_id].broadcast(obj['message'])
+
+class ConnectionManagerDict(defaultdict):
+    def __missing__(self,project_id):
+        res = self[project_id] = ConnectionManager(project_id)
+        return res
+
+
+manager_dict = ConnectionManagerDict()
+
+app.scheduler = AsyncIOScheduler()
+app.scheduler.add_job(myfunc, 'interval', seconds=5)
+app.scheduler.start()
+
+
+
+@app.websocket("/ws/{project_id}")
+async def websocket_endpoint(websocket: WebSocket, project_id: str):
+    await manager_dict[project_id].connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            app.queue_system.put({"message": data, "websocket": websocket, "project_id": project_id})
+    except WebSocketDisconnect:
+        manager_dict[project_id].disconnect(websocket)
+        print(f"Client #{project_id} disconnected")
+
+
 
 
 if __name__ == "__main__":

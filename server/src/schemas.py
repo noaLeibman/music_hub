@@ -1,11 +1,11 @@
 from typing import List, Optional
-
+import typing as t
 from pydantic import BaseModel
+from models import UserInfo
 
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class MySchema(BaseModel):
+    class Conifg:
+        orm_mode = True
 
 
 class TokenData(BaseModel):
@@ -32,25 +32,23 @@ class Item(ItemBase):
 class UserInfoBase(BaseModel):
     email: str
     full_name: Optional[str] = None
+    first_name: str
     disabled: Optional[bool] = False
-    created_projects: Optional[str] = ""
-    joined_projects: Optional[str] = ""
-    websockets: Optional[str] = ""
+
+    # def from_orm(cls:t.Type['UserInfoBase'], obj: UserInfo) -> 'UserInfoBase':
+    #     return cls(
+    #         obj.
+    #     )
+    #     pass
 
     class Config:
         orm_mode = True
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
 
 class Project(BaseModel):
     project_name: str
     email: str
-    id: Optional[int] = None
-    web_socket: Optional[str] = None
 
     class Config:
         orm_mode = True

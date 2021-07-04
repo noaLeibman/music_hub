@@ -1,0 +1,6 @@
+bcrypt
+jwt
+pydantic
+sqlalchemy
+fastapi[all]
+python-jose
