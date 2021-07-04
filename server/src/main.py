@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from typing import List
 from typing import Optional
@@ -178,15 +179,6 @@ async def get_project(mail: str, db: Session = Depends(get_db)):
 
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    print(websocket.client_state)
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
-
-
 @app.post("/users/", response_model=schemas.UserCreate)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -242,7 +234,7 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return items
 
 app.queue_system = queue.Queue()
-app.queue_limit = 1
+app.queue_limit = 5
 
 router_manager = dict()
 
@@ -257,7 +249,7 @@ class ConnectionManager():
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket, project_id: str):
+    async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
@@ -272,37 +264,48 @@ async def myfunc():
         if not app.queue_system.empty():
             obj = app.queue_system.get_nowait()
             project_id = obj['project_id']
+            print("this is a message in my func")
+            print(project_id)
             if obj['websocket'] in router_manager[project_id].active_connections:
                 await router_manager[project_id].send_personal_message(f"You wrote: {obj['message']}", obj['websocket'])
                 await router_manager[project_id].broadcast(obj['message'])
 
+
+
+
+
+
 class ConnectionManagerDict(defaultdict):
-    def __missing__(self,project_id):
+    def __missing__(self, project_id):
         res = self[project_id] = ConnectionManager(project_id)
         return res
 
 
 manager_dict = ConnectionManagerDict()
 
-app.scheduler = AsyncIOScheduler()
-app.scheduler.add_job(myfunc, 'interval', seconds=5)
-app.scheduler.start()
-
-
 
 @app.websocket("/ws/{project_id}")
 async def websocket_endpoint(websocket: WebSocket, project_id: str):
+    print(project_id)
     await manager_dict[project_id].connect(websocket)
+    print(manager_dict[project_id])
     try:
         while True:
             data = await websocket.receive_text()
+            print(data)
+            print(manager_dict[project_id].getProjectID())
+            print(websocket.client.port)
             app.queue_system.put({"message": data, "websocket": websocket, "project_id": project_id})
     except WebSocketDisconnect:
         manager_dict[project_id].disconnect(websocket)
         print(f"Client #{project_id} disconnected")
 
 
-
+@app.on_event("startup")
+async def startup_event():
+    app.scheduler = AsyncIOScheduler()
+    app.scheduler.add_job(myfunc, 'interval', seconds=1)
+    app.scheduler.start()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

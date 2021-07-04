@@ -125,7 +125,7 @@ const Editor: React.FC<Props> = (props) => {
   const classes = useStyles();
 
   useEffect(() => {
-    const ws = new WebSocket("https://localhost:8080");
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws/<project_id>");
     ws.onopen = () => {
       console.log('web socket open');
     }
@@ -134,10 +134,11 @@ const Editor: React.FC<Props> = (props) => {
       if (json !== undefined) {
         receiveAction(json);
       }
-      console.log(message);
+      console.log(message)
     }
-    ws.onclose = () => {
-      console.log('web socket closed');
+    ws.onclose = (e) => {
+    
+      console.log('web socket closed ' + e.code + e.reason);
     }
     ws.onerror = (err: Event) => {
       console.log(
@@ -147,9 +148,9 @@ const Editor: React.FC<Props> = (props) => {
       );
       ws.close();
     };
-    ws.onclose = () => {
-      console.log('web socket closing');
-    }
+    
+    setInterval(() => ws.send('this is a message'),5000)
+    
     setWebSocket(ws);
   }, [])
   
