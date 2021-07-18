@@ -3,6 +3,7 @@ import typing as t
 from pydantic import BaseModel
 from models import UserInfo
 
+
 class MySchema(BaseModel):
     class Conifg:
         orm_mode = True
@@ -45,10 +46,18 @@ class UserInfoBase(BaseModel):
         orm_mode = True
 
 
-
 class Project(BaseModel):
     project_name: str
     email: str
+
+    class Config:
+        orm_mode = True
+
+
+class ProjectOut(BaseModel):
+    project_name: str
+    email: str
+    uuid: str
 
     class Config:
         orm_mode = True

@@ -1,4 +1,4 @@
-import asyncio
+
 from datetime import datetime, timedelta
 from typing import List
 from typing import Optional
@@ -11,7 +11,7 @@ from fastapi.openapi.models import OAuthFlows
 from fastapi.security import OAuth2
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
-from fastapi.responses import HTMLResponse
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import queue
 from jose import jwt
@@ -24,7 +24,6 @@ import schemas
 from database import SessionLocal
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 259200
-
 
 app = FastAPI()
 
@@ -78,11 +77,11 @@ def authenticate_user(email: str, password: str, db: Session = Depends(get_db)):
 
 class OAuth2PasswordBearerWithCookie(OAuth2):
     def __init__(
-        self,
-        tokenUrl: str,
-        scheme_name: str = None,
-        scopes: dict = None,
-        auto_error: bool = True,
+            self,
+            tokenUrl: str,
+            scheme_name: str = None,
+            scopes: dict = None,
+            auto_error: bool = True,
     ):
         if not scopes:
             scopes = {}
@@ -110,7 +109,7 @@ oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/token")
 
 
 async def get_current_user(
-    request: Request = Depends(oauth2_scheme), db: Session = Depends(get_db)
+        request: Request = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -134,20 +133,18 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: schemas.UserInfoBase = Depends(get_current_user),
+        current_user: schemas.UserInfoBase = Depends(get_current_user),
 ):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
-
-
 @app.post("/token")
 async def login_for_access_token(
-    response: Response,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
+        response: Response,
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: Session = Depends(get_db),
 ):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -166,17 +163,16 @@ async def login_for_access_token(
 
 @app.get("/users/me/", response_model=schemas.UserInfoBase)
 async def read_users_me(
-    current_user: schemas.UserInfoBase = Depends(get_current_active_user),
+        current_user: schemas.UserInfoBase = Depends(get_current_active_user),
 ):
     return current_user
 
 
 @app.get("/project/{mail}")
 async def get_project(mail: str, db: Session = Depends(get_db)):
-    the_user = crud.get_user_by_email(db,email=mail)
+    the_user = crud.get_user_by_email(db, email=mail)
     stuff = the_user.projects_list_uuid
-    return Response(content = stuff)
-
+    return Response(content=stuff)
 
 
 @app.post("/users/", response_model=schemas.UserCreate)
@@ -187,7 +183,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
 
-@app.post("/create_project/", response_model=schemas.Project)
+@app.post("/create_project/", response_model=schemas.ProjectOut)
 def create_project(item: schemas.Project, db: Session = Depends(get_db)):
     db_project = crud.get_project_by_name(db, name=item.project_name)
     # We want unique project names
@@ -212,8 +208,8 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.get("/users/{user_email}", response_model=schemas.User)
 def read_user(
-    email: str,
-    db: Session = Depends(get_db),
+        email: str,
+        db: Session = Depends(get_db),
 ):
     db_user = crud.get_user_by_email(db, email)
     if db_user is None:
@@ -223,7 +219,7 @@ def read_user(
 
 @app.post("/users/{user_id}/items/", response_model=schemas.Item)
 def create_item_for_user(
-    user_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db)
+        user_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db)
 ):
     return crud.create_user_item(db=db, item=item, user_id=user_id)
 
@@ -233,19 +229,23 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
 
+
 app.queue_system = queue.Queue()
 app.queue_limit = 5
 
 router_manager = dict()
+
 
 class ConnectionManager():
     def __init__(self, project_id):
         self.active_connections: List[WebSocket] = []
         self.project_id = project_id
         router_manager[project_id] = self
+
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
 
@@ -255,6 +255,7 @@ class ConnectionManager():
     async def broadcast(self, message: str):
         for connection in self.active_connections:
             await connection.send_text(message)
+
     def getProjectID(self):
         return self.project_id
 
@@ -269,10 +270,6 @@ async def myfunc():
             if obj['websocket'] in router_manager[project_id].active_connections:
                 await router_manager[project_id].send_personal_message(f"You wrote: {obj['message']}", obj['websocket'])
                 await router_manager[project_id].broadcast(obj['message'])
-
-
-
-
 
 
 class ConnectionManagerDict(defaultdict):
@@ -306,6 +303,7 @@ async def startup_event():
     app.scheduler = AsyncIOScheduler()
     app.scheduler.add_job(myfunc, 'interval', seconds=1)
     app.scheduler.start()
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -1,6 +1,4 @@
 import bcrypt
-import jwt
-from pydantic.datetime_parse import timedelta, datetime
 from sqlalchemy.orm import Session
 
 import models
@@ -52,30 +50,7 @@ def create_project_2(db: Session, project: schemas.Project):
     return db_project_to_add
 
 
-def update_user_created(db: Session, email: str, project_name: str):
-    user_to_update = get_user_by_email(db, email)
-    db.query(models.UserInfo).filter(models.UserInfo.email == email).update(
-    )
 
-
-def check_username_password(db: Session, user: schemas.UserCreate):
-    db_user_info: models.UserInfo = get_user_by_email(db, user.email)
-    return bcrypt.checkpw(
-        user.hashed_password.encode("utf8"), db_user_info.hashed_password
-    )
-
-
-def create_access_token(*, data: dict, expires_delta: timedelta = None):
-    secret_key = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-    algorithm = "HS256"
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
-    return encoded_jwt
 
 
 def get_items(db: Session, skip: int = 0, limit: int = 100):

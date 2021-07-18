@@ -59,5 +59,5 @@ class ProjectsUsers(Base):
 
 
 
-if os.getenv("IS_DEBUG"):
-    Base.metadata.create_all(bind=engine)
+
+Base.metadata.create_all(bind=engine)
