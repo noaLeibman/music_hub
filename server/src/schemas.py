@@ -33,7 +33,7 @@ class Item(ItemBase):
 class UserInfoBase(BaseModel):
     email: str
     full_name: Optional[str] = None
-    first_name: str
+    first_name: Optional[str] = None
     disabled: Optional[bool] = False
 
     # def from_orm(cls:t.Type['UserInfoBase'], obj: UserInfo) -> 'UserInfoBase':
@@ -45,6 +45,18 @@ class UserInfoBase(BaseModel):
     class Config:
         orm_mode = True
 
+# class ProjectDataIn(BaseModel):
+#     synthTracks: str
+#     project_id: str
+#
+#     class Config:
+#         orm_mode = True
+
+class ProjectDataOut(BaseModel):
+    project_id: str
+
+    class Config:
+        orm_mode = True
 
 class Project(BaseModel):
     project_name: str

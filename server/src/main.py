@@ -1,17 +1,20 @@
-
+import json
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Dict, AnyStr, Any, Union
 from typing import Optional
 from collections import defaultdict
 import bcrypt
+import boto3
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, status, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, status, WebSocketDisconnect, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlows
+from fastapi.params import File
 from fastapi.security import OAuth2
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
-
+import shutil
+import uuid
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import queue
 from jose import jwt
@@ -22,7 +25,10 @@ from starlette.responses import Response
 import crud
 import schemas
 from database import SessionLocal
-
+from models import gen_uuid_4
+JSONObject = Dict[AnyStr, Any]
+JSONArray = List[Any]
+JSONStructure = Union[JSONArray, JSONObject]
 ACCESS_TOKEN_EXPIRE_MINUTES = 259200
 
 app = FastAPI()
@@ -31,6 +37,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://127.0.0.1:3000"
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -229,80 +236,136 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
 
+files_manager = dict()
 
-app.queue_system = queue.Queue()
-app.queue_limit = 5
-
-router_manager = dict()
-
-
-class ConnectionManager():
-    def __init__(self, project_id):
-        self.active_connections: List[WebSocket] = []
-        self.project_id = project_id
-        router_manager[project_id] = self
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-    def getProjectID(self):
-        return self.project_id
+@app.post("/project_save_tracks")
+async def file(recorded_files: List[UploadFile] = File(...)):
+    files_dict_recorded = dict()
+    files_dict_uploaded = dict()
+    for file in recorded_files:
+        if "recorded" in file.filename:
+            file_location = f"files/{file.filename}"
+            with open(file_location, "wb+") as file_object:
+                file_object.write(file.file.read())
+            files_dict_recorded[file] = file_location
+        if "uploaded" in file.filename:
+            file_location = f"files/{file.filename}"
+            with open(file_location, "wb+") as file_object:
+                file_object.write(file.file.read())
+            files_dict_uploaded[file] = file_location
+    generated_id = uuid.uuid4()
+    files_manager[generated_id]=list()
+    files_manager[generated_id].append(files_dict_recorded)
+    files_manager[generated_id].append(files_dict_uploaded)
 
 
-async def myfunc():
-    for i in range(app.queue_limit):
-        if not app.queue_system.empty():
-            obj = app.queue_system.get_nowait()
-            project_id = obj['project_id']
-            print("this is a message in my func")
-            print(project_id)
-            if obj['websocket'] in router_manager[project_id].active_connections:
-                await router_manager[project_id].send_personal_message(f"You wrote: {obj['message']}", obj['websocket'])
-                await router_manager[project_id].broadcast(obj['message'])
+    ##### make a function that uploads the dictionaries
+
+    return generated_id
+
+# @app.post("/project_save_uploaded/{generated_id}")
+# async def file(uploaded_files: List[UploadFile] = File(...)):
+#     files_dict_uploaded = dict()
+#     for file in uploaded_files:
+#         file_location = f"files/{file.filename}"
+#         with open(file_location, "wb+") as file_object:
+#             file_object.write(file.file.read())
+#         files_dict_uploaded
+
+@app.get("/presigned_url/{project_id}")
+async def get_project_id(project_id : str):
+    id = project_id
+    lambda_client = boto3.client('lambda', 'eu-central-1')
+    lambda_payload = json.dumps({"project_id": id})
+
+    response = lambda_client.invoke(FunctionName='getFolderURL',
+                         InvocationType='RequestResponse',
+                         Payload=lambda_payload)
+    data = response['Payload'].read()
+    print(data)
+    return data['url']
+# @app.post("/project_save_data/{generated_id}")
+# async def get_body(projectData = schemas.ProjectDataIn, generated_id = str, db = Depends(get_db)):
+#     project_id = projectData.project_id
+#
 
 
-class ConnectionManagerDict(defaultdict):
-    def __missing__(self, project_id):
-        res = self[project_id] = ConnectionManager(project_id)
-        return res
 
 
-manager_dict = ConnectionManagerDict()
+    return
+
+# app.queue_system = queue.Queue()
+# app.queue_limit = 5
 
 
-@app.websocket("/ws/{project_id}")
-async def websocket_endpoint(websocket: WebSocket, project_id: str):
-    print(project_id)
-    await manager_dict[project_id].connect(websocket)
-    print(manager_dict[project_id])
-    try:
-        while True:
-            data = await websocket.receive_text()
-            print(data)
-            print(manager_dict[project_id].getProjectID())
-            print(websocket.client.port)
-            app.queue_system.put({"message": data, "websocket": websocket, "project_id": project_id})
-    except WebSocketDisconnect:
-        manager_dict[project_id].disconnect(websocket)
-        print(f"Client #{project_id} disconnected")
+
+# class ConnectionManager():
+#     def __init__(self, project_id):
+#         self.active_connections: List[WebSocket] = []
+#         self.project_id = project_id
+#         router_manager[project_id] = self
+#
+#     async def connect(self, websocket: WebSocket):
+#         await websocket.accept()
+#         self.active_connections.append(websocket)
+#
+#     def disconnect(self, websocket: WebSocket):
+#         self.active_connections.remove(websocket)
+#
+#     async def send_personal_message(self, message: str, websocket: WebSocket):
+#         await websocket.send_text(message)
+#
+#     async def broadcast(self, message: str):
+#         for connection in self.active_connections:
+#             await connection.send_text(message)
+#
+#     def getProjectID(self):
+#         return self.project_id
+
+#
+# async def myfunc():
+#     for i in range(app.queue_limit):
+#         if not app.queue_system.empty():
+#             obj = app.queue_system.get_nowait()
+#             project_id = obj['project_id']
+#             print("this is a message in my func")
+#             print(project_id)
+#             if obj['websocket'] in router_manager[project_id].active_connections:
+#                 await router_manager[project_id].send_personal_message(f"You wrote: {obj['message']}", obj['websocket'])
+#                 await router_manager[project_id].broadcast(obj['message'])
 
 
-@app.on_event("startup")
-async def startup_event():
-    app.scheduler = AsyncIOScheduler()
-    app.scheduler.add_job(myfunc, 'interval', seconds=1)
-    app.scheduler.start()
+# class ConnectionManagerDict(defaultdict):
+#     def __missing__(self, project_id):
+#         res = self[project_id] = ConnectionManager(project_id)
+#         return res
+
+
+# manager_dict = ConnectionManagerDict()
+#
+#
+# @app.websocket("/ws/{project_id}")
+# async def websocket_endpoint(websocket: WebSocket, project_id: str):
+#     print(project_id)
+#     await manager_dict[project_id].connect(websocket)
+#     print(manager_dict[project_id])
+#     try:
+#         while True:
+#             data = await websocket.receive_text()
+#             print(data)
+#             print(manager_dict[project_id].getProjectID())
+#             print(websocket.client.port)
+#             app.queue_system.put({"message": data, "websocket": websocket, "project_id": project_id})
+#     except WebSocketDisconnect:
+#         manager_dict[project_id].disconnect(websocket)
+#         print(f"Client #{project_id} disconnected")
+
+#
+# @app.on_event("startup")
+# async def startup_event():
+#     app.scheduler = AsyncIOScheduler()
+#     app.scheduler.add_job(myfunc, 'interval', seconds=1)
+#     app.scheduler.start()
 
 
 if __name__ == "__main__":
