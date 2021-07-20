@@ -32,9 +32,6 @@ const App = () => {
   const [selectedPage, setSelectedPage] = useState<string>(Main);
   const [searchText, setSearchText] = useState<string>("");
   const [menuState, setMenuState] = useState<boolean>(false);
-  // const [player, setPlayer] = useState<WaveformPlayer>();
-  const [recorder, setRecorder] = useState<Recorder>();
-  const [userMic, setUserMic] = useState<UserMedia>();
   const [loginButton, setLoginButton] = useState<boolean>(false);
   const [signupButton, setSignupButton] = useState<boolean>(false);
   const [createProject, setCreateProject] = useState<boolean>(false)
@@ -44,21 +41,12 @@ const App = () => {
   const [signuppassword, setSignupPassword] = useState<string>("");
   const [projectname, setProjectName] = useState<string>("");
   const [collapseOpen, setCollapseOpen] = useState<boolean>(false);
+  const [currProjectId, setCurrProjectId] = useState<string>("");
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
   const getMenuList = () => [Main,Profile, Create];
   const searchSite = (text: string) => {};
-
-  const initState = async () => {
-    await startTone();
-    setRecorder(new Recorder());
-    setUserMic(new UserMedia());
-  }
-
-  useEffect(() => {
-    initState();
-  }, [])
 
   const toggleDrawer = (open: boolean) => (
     event: React.KeyboardEvent | React.MouseEvent,
@@ -240,25 +228,25 @@ const App = () => {
     setMenuState(false);
     setCreateProject(false);
     setSelectedPage(Create);
-  //   const data = {project_name: projectname, email: signupemail}
-  //   fetch('http://127.0.0.1:8000/create_project/', {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify(data),
-  //   })
-  //   .then(response => response.json())
-  // .then(data => {
-  //   console.log('Success:', data);
-  //   setMenuState(false);
-  //   setCreateProject(false);
-  //   setSelectedPage(Create);
-  //   })
-    
-  // .catch((error) => {
-  //   console.error('Error:', error);
-  // });
+    // const data = {project_name: projectname, email: signupemail}
+    // fetch('http://127.0.0.1:8000/create_project/', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(data),
+    // })
+    // .then(response => response.json())
+    // .then(data => {
+    //   console.log('Success:', data);
+    //   setCurrProjectId(data.uuid);
+    //   setMenuState(false);
+    //   setCreateProject(false);
+    //   setSelectedPage(Create);
+    // })
+    // .catch((error) => {
+    //   console.error('Error:', error);
+    // });
   } 
   const tryMe = () => {
     axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true})
@@ -356,9 +344,7 @@ const App = () => {
             <MainFeed />   
           }
           { selectedPage === Create && 
-            <Editor 
-              recorder={recorder}
-              userMic={userMic}
+            <Editor
               projectId={"1234"}
             />  
           }

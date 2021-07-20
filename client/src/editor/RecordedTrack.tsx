@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip } from '@material-ui/core';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles } from '@material-ui/core';
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
@@ -8,19 +8,37 @@ import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
-import * as utils from 'audio-buffer-utils';
+import * as Tone from 'tone';
+import { EffectsData } from './Types'
+
+const useStyles = makeStyles({
+    slider: {
+        maxWidth: '70%',
+    },
+    effectIcon: {
+        maxWidth: '30%',
+    }
+});
 
 type Props = {
     id: number;
     player: PeaksPlayer;
+    effects: EffectsData;
     recorder: Recorder | undefined;
     userMic: UserMedia | undefined;
     tracksLength: number;
     setTracksLength: (value: number) => void;
     deleteTrack: (idx: number, type: string) => void;
     url: string | undefined;
-    sendEffect: (effect: string, trackType: string, id: number) => void;
+    connectEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
+    disconnectEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
+}
+
+type EffectNodes = {
+    reverb: Tone.Reverb | undefined;
+    distortion: Tone.Distortion | undefined;
+    tremolo: Tone.Tremolo | undefined;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
@@ -29,9 +47,17 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
     const [playerLoaded, setPlayerLoaded] = useState<boolean>(false)
+    const [reverbValue, setReverbValue] = useState<number>(0);
+    const [distortionValue, setDistortionValue] = useState<number>(0);
+    const [tremoloValue, setTremoloValue] = useState<number>(0);
+    const [connectedEffects, setConnectedEffects] = useState<EffectNodes>({
+        reverb: undefined, distortion: undefined, tremolo: undefined
+    });
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
+
+    const classes = useStyles();
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -72,6 +98,10 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }, [props.tracksLength, props.player]);
 
+    useEffect(() => {
+        addEffect('reverb');
+    }, [reverbValue]);
+
     const startRecording = () => {
         const recorder = props.recorder?.get();
         if (!recorder) return;
@@ -96,13 +126,13 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         } else {
             const data = await recorder.stop();
             const url = URL.createObjectURL(data);
-            // setTrack(url);
             await props.player?.load(url, zoomRef, overviewRef);
             const length = props.player?.player?.getBuffer()?.duration;
             if ( length && length > props.tracksLength) {
                 props.setTracksLength(length);
             }
             console.log('stopped');
+            // console.log(props.player?.player?.getBuffer().numberOfChannels);
         }
     }
 
@@ -125,7 +155,52 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     }
 
     const addEffect = (effect: string) => {
-        props.sendEffect(effect, 'recorded', props.id);
+        let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
+        if (effect === 'reverb') {
+            if (reverbValue === 0) {
+                if (connectedEffects.reverb) {
+                    props.disconnectEffect(connectedEffects.reverb, 'recorded', props.id);
+                }
+                return;
+            }
+            toConnect = Effects.getReverb(reverbValue);
+            toDisconnect = connectedEffects.reverb;
+            setConnectedEffects({
+                reverb: toConnect,
+                distortion: connectedEffects.distortion,
+                tremolo: connectedEffects.tremolo,
+            });
+        } else if (effect === 'distortion') {
+            if (distortionValue === 0) {
+                if (connectedEffects.distortion) {
+                    props.disconnectEffect(connectedEffects.distortion, 'recorded', props.id);
+                }
+                return;
+            }
+            toConnect = Effects.getDistortion(distortionValue);
+            toDisconnect = connectedEffects.distortion;
+            setConnectedEffects({
+                reverb: connectedEffects.reverb,
+                distortion: toConnect,
+                tremolo: connectedEffects.tremolo,
+            });
+        } else if (effect === 'tremolo') {
+            if (tremoloValue === 0) {
+                if (connectedEffects.tremolo) {
+                    props.disconnectEffect(connectedEffects.tremolo, 'recorded', props.id);
+                }
+                return;
+            }
+            toConnect = Effects.getTremolo(tremoloValue);
+            toDisconnect = connectedEffects.tremolo;
+            setConnectedEffects({
+                reverb: connectedEffects.reverb,
+                distortion: connectedEffects.distortion,
+                tremolo: toConnect,
+            });
+        }
+        if (toDisconnect !== undefined) props.disconnectEffect(toDisconnect, 'recorded', props.id);
+        if (toConnect !== undefined) props.connectEffect(toConnect, 'recorded', props.id);
     }
 
     const handleSliceFrom = (e: any) => {
@@ -148,6 +223,13 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             props.player.dispose();
             props.deleteTrack(props.id, 'recorded');
         }
+    }
+
+    const handleReverbChange = (event: any, newValue: number | number[]) => {
+        if (newValue as number - reverbValue >= 0.5 ||newValue as number - reverbValue <= -0.5) {
+           setReverbValue(newValue as number);
+            console.log('reverb change'); 
+        }  
     }
 
     const renderControls = () => {
@@ -190,6 +272,45 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         </Button>
                     </Tooltip>
                 </ButtonGroup>
+                {connectedEffects.reverb && <Tooltip
+                    title="Reverb"
+                    placement="left"
+                >
+                    <Slider 
+                    value={reverbValue} 
+                    onChange={handleReverbChange}
+                    min={0}
+                    max={10}
+                    className={classes.slider}
+                    valueLabelDisplay="auto"
+                />  
+                </Tooltip>}
+                {connectedEffects.distortion && <Tooltip
+                    title="Distortion"
+                    placement="top"
+                >
+                    <Slider 
+                    value={distortionValue} 
+                    onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
+                    min={0}
+                    max={10}
+                    className={classes.slider}
+                    valueLabelDisplay="auto"
+                />  
+                </Tooltip>}
+                {connectedEffects.tremolo && <Tooltip
+                    title="Tremolo"
+                    placement="top"
+                >
+                    <Slider 
+                    value={tremoloValue} 
+                    onChange={(event: any, newValue: number | number[]) => setTremoloValue(newValue as number)}
+                    min={0}
+                    max={10}
+                    className={classes.slider}
+                    valueLabelDisplay="auto"
+                />  
+                </Tooltip>}
             </Box>
         );
     }
@@ -217,7 +338,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                 >
                     <MenuItem onClick={() => addEffect('reverb')}>Reverb</MenuItem>
                     <MenuItem onClick={() => addEffect('distortion')}>Distortion</MenuItem>
-                    <MenuItem>Vibrato</MenuItem>
+                    <MenuItem onClick={() => addEffect('tremolo')}>Tremolo</MenuItem>
                 </Menu>
             </Grid>
             <Grid item xs={10} ref={zoomRef}>

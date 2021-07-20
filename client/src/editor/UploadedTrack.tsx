@@ -5,14 +5,14 @@ import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
-import * as utils from 'audio-buffer-utils';
 import {useDropzone} from 'react-dropzone';
+import * as Tone from 'tone';
 
 type Props = {
     id: number;
     player: PeaksPlayer;
     deleteTrack: (idx: number, type: string) => void;
-    sendEffect: (effect: string, trackType: string, id: number) => void;
+    sendEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
 }
 
@@ -65,7 +65,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
       });
 
     const addEffect = (effect: string) => {
-        props.sendEffect(effect, 'recorded', props.id);
+        // props.sendEffect(effect, 'recorded', props.id);
     }
 
     const handleSliceFrom = (e: any) => {

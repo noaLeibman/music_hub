@@ -46,8 +46,12 @@ class Effects {
     return new Tone.Reverb(delay).toDestination();
   }
 
-  static getDistortion() {
-    return new Tone.Distortion(0.8).toDestination();
+  static getDistortion(level: number) {
+    return new Tone.Distortion(level).toDestination();
+  }
+
+  static getTremolo(level: number) {
+    return new Tone.Tremolo(level).toDestination();
   }
 }
 
@@ -120,6 +124,10 @@ class PeaksPlayer {
 
   connect(node: any) {
     this.player?.externalPlayer.connect(node);
+  }
+
+  disconnect(node: any) {
+    this.player?.externalPlayer.disconnect(node);
   }
 
   play() {

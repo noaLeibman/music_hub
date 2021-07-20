@@ -3,7 +3,7 @@ import * as Tone from 'tone';
 import { Tooltip, Button, Card, Select, Grid, MenuItem, TextField, Popover, Box } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import ChordView from "./ChordView";
-import { ChordData } from "./Editor";
+import { ChordData } from "./Types";
 
 const chords = ['A', 'Am', 'A#', 'Am#', 'B', 'Bm', 'C', 'Cm', 'C#', 'Cm#', 'D', 'Dm',
  'D#', 'Dm#', 'E', 'Em', 'F', 'Fm', 'F#', 'Fm#', 'G', 'Gm', 'G#', 'Gm#'];
