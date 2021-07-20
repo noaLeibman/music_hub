@@ -228,25 +228,25 @@ const App = () => {
     setMenuState(false);
     setCreateProject(false);
     setSelectedPage(Create);
-    // const data = {project_name: projectname, email: signupemail}
-    // fetch('http://127.0.0.1:8000/create_project/', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(data),
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   console.log('Success:', data);
-    //   setCurrProjectId(data.uuid);
-    //   setMenuState(false);
-    //   setCreateProject(false);
-    //   setSelectedPage(Create);
-    // })
-    // .catch((error) => {
-    //   console.error('Error:', error);
-    // });
+    const data = {project_name: projectname, email: signupemail}
+    fetch('http://127.0.0.1:8000/create_project/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Success:', data);
+      setCurrProjectId(data.uuid);
+      setMenuState(false);
+      setCreateProject(false);
+      setSelectedPage(Create);
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
   } 
   const tryMe = () => {
     axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true})
