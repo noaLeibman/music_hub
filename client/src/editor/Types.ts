@@ -31,10 +31,12 @@ type RTData = {
   player: PeaksPlayer;
   effects: EffectsData;
   url: string | undefined;
+  file: Blob | undefined;
 }
 
 type UTData = {
   player: PeaksPlayer;
+  file: Blob | undefined;
 }
 
 type SynthData = {

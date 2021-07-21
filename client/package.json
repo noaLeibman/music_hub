@@ -53,6 +53,7 @@
   "devDependencies": {
     "@types/wavesurfer.js": "^3.3.2",
     "audio-buffer-utils": "^5.1.2",
-    "axios": "^0.21.1"
+    "axios": "^0.21.1",
+    "lamejs": "^1.2.0"
   }
 }

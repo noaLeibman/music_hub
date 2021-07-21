@@ -33,6 +33,7 @@ type Props = {
     connectEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
     disconnectEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
+    setFile: (file: Blob, id: number) => void;
 }
 
 type EffectNodes = {
@@ -125,6 +126,8 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             return;
         } else {
             const data = await recorder.stop();
+            props.setFile(data, props.id);
+            console.log('recorded data is: ' + data.type);
             const url = URL.createObjectURL(data);
             await props.player?.load(url, zoomRef, overviewRef);
             const length = props.player?.player?.getBuffer()?.duration;

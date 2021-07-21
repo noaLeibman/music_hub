@@ -14,6 +14,7 @@ type Props = {
     deleteTrack: (idx: number, type: string) => void;
     sendEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
+    setFile: (file: Blob, id: number) => void;
 }
 
 const baseStyle = {
@@ -56,6 +57,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
         const url = URL.createObjectURL(files[0]);
         console.log(url);
         props.player.load(url, zoomRef, overviewRef);
+        props.setFile(files[0], props.id);
     }
 
     const {getRootProps, getInputProps} = useDropzone({

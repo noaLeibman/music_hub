@@ -12,6 +12,8 @@ import UploadedTrack from './UploadedTrack';
 import * as utils from 'audio-buffer-utils';
 import {ChordData, STData, RTData, UTData, ProjectJson, SynthData} from './Types';
 import axios from 'axios';
+import * as lamejs from 'lamejs';
+import {Mp3Encoder} from 'lamejs';
 
 const useStyles = makeStyles({
   root: {
@@ -41,29 +43,29 @@ type Props = {
   projectId: string;
 }
 
-const testProject: ProjectJson = {
-  recordedUrls: ['https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/The+Beatles+-+Penny+Lane.mp3'],
-  synthTracks: [{
-    chords: [
-      {
-        id: 1,
-        name: 'A',
-        duration: 1,
-        durationStr: '1',
-        startTime: 0,
-      },
-      {
-        id: 2,
-        name: 'C',
-        duration: 1,
-        durationStr: '1',
-        startTime: 1,
-      }
-    ],
-    order: [1, 2],
-  }],
-  length: 10,
-}
+// const testProject: ProjectJson = {
+//   recordedUrls: ['https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/The+Beatles+-+Penny+Lane.mp3'],
+//   synthTracks: [{
+//     chords: [
+//       {
+//         id: 1,
+//         name: 'A',
+//         duration: 1,
+//         durationStr: '1',
+//         startTime: 0,
+//       },
+//       {
+//         id: 2,
+//         name: 'C',
+//         duration: 1,
+//         durationStr: '1',
+//         startTime: 1,
+//       }
+//     ],
+//     order: [1, 2],
+//   }],
+//   length: 10,
+// }
 
 const Editor: React.FC<Props> = (props) => {
   const [recordedTracks, setRecordedTracks] = useState<RTData[]>([]);
@@ -72,36 +74,8 @@ const Editor: React.FC<Props> = (props) => {
   const [longestTrack, setLongestTrack] = useState<number>(0);
   const [recorder, setRecorder] = useState<Recorder>();
   const [userMic, setUserMic] = useState<UserMedia>();
-  // const [webSocket, setWebSocket] = useState<WebSocket>();
 
   const classes = useStyles();
-
-  // useEffect(() => {
-  //   const ws = new WebSocket("ws://127.0.0.1:8000/ws/<project_id>");
-  //   ws.onopen = () => {
-  //     console.log('web socket open');
-  //   }
-  //   ws.onmessage = (message: MessageEvent<any>) => {
-  //     const json = parseActionJson(message);
-  //     if (json !== undefined) {
-  //       receiveAction(json);
-  //     }
-  //     console.log(message)
-  //   }
-  //   ws.onclose = (e) => {
-  //     console.log('web socket closed ' + e.code + e.reason);
-  //   }
-  //   ws.onerror = (err: Event) => {
-  //     console.log(
-  //         "Socket encountered error: " +
-  //         err +
-  //         ", Closing socket"
-  //     );
-  //     ws.close();
-  //   };
-  //   setInterval(() => ws.send('this is a message'),5000)
-  //   setWebSocket(ws);
-  // }, [])
 
   const initState = async () => {
     await startTone();
@@ -134,7 +108,8 @@ const Editor: React.FC<Props> = (props) => {
           on: false,
           node: undefined,
         }
-      }
+      },
+      file: undefined,
     }
     setRecordedTracks([...recordedTracks, track]);
   }
@@ -150,7 +125,7 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const addUploadedTrack = () => {
-    setUploadedTracks([...uploadedTracks, {player: new PeaksPlayer()}])
+    setUploadedTracks([...uploadedTracks, {player: new PeaksPlayer(), file: undefined}])
   }
   
   const play = () => {
@@ -185,6 +160,18 @@ const Editor: React.FC<Props> = (props) => {
     const copy = [...synthTracks];
     copy[idx].synth = newSynth;
     setSynthTracks(copy);
+  }
+
+  const setUTFile = (file: Blob, idx: number) => {
+    const copy = [...uploadedTracks];
+    copy[idx].file = file;
+    setUploadedTracks(copy);
+  }
+
+  const setRTFile = (file: Blob, idx: number) => {
+    const copy = [...recordedTracks];
+    copy[idx].file = file;
+    setRecordedTracks(copy);
   }
 
   const connectEffect = (effect: Tone.ToneAudioNode, trackType: string, id: number) => {
@@ -320,7 +307,8 @@ const Editor: React.FC<Props> = (props) => {
             on: false,
             node: undefined,
           }
-        }
+        },
+        file: undefined,
       }
     });
     const sTracks: STData[] = json.synthTracks.map((data: SynthData, index: number) => {
@@ -348,121 +336,67 @@ const Editor: React.FC<Props> = (props) => {
     setSynthTracks(sTracks);
   }
 
-  // const parseActionJson = (json: any) => {
-  //   if (!json || !json.trackId || !json.trackType || json.projectId) {
-  //     console.log('wrong json was sent from server: ' + json);
-  //     return undefined;
-  //   }
-  //   const chordsMap = new Map<number, ChordData>();
-  //   json.chords.forEach((item: any) => {
-  //     if (item.id && item.data) {
-  //       chordsMap.set(item.id, item.data);
-  //     }
-  //   })
-  //   const actionsJson: ActionsJson = {
-  //     projectId: json.projectId,
-  //     trackId: json.trackId,
-  //     trackType: json.trackType,
-  //     effect: json.effect ? json.effect : undefined,
-  //     sliceFrom: json.sliceFrom ? json.sliceFrom : undefined,
-  //     sliceTo: json.sliceTo ? json.sliceTo : undefined,
-  //     chords: json.chords ? json.chords.map((item: any) => {
-  //       return {
-  //         id: item.id,
-  //         data: item.data,
-  //       }
-  //     }) : undefined,
-  //     chordsOrder: json.chordsOrder ? json.chordsOrder : undefined,
-  //   }
-  // }
-
-  // const sendToServer  = (actionData: ActionsJson) => {
-  //   if (!webSocket || webSocket.CLOSED) {
-  //     console.log('web socket is undefined or closed');
-  //   }
-  //   webSocket?.send(JSON.stringify(actionData));
-  // }
-
-  // const receiveAction = (changes: ActionsJson) => {
-  //   if (!changes || !changes.trackId) {
-  //     console.log('no track ID sent from server');
-  //     return;
-  //   }
-  //   let track: RTData | STData | UTData;
-  //   if (changes.trackType === 'recorded' || changes.trackType === 'uploaded') {
-  //     track = changes.trackType === 'recorded' ? recordedTracks[changes.trackId] : uploadedTracks[changes.trackId];
-  //     if (changes.effect) {
-  //       addEffect(changes.effect, changes.trackType, changes.trackId);
-  //     }
-  //     if (changes.sliceFrom && changes.sliceTo) {
-  //       if (changes.sliceFrom < changes.sliceTo) {
-  //         sliceTrack(changes.sliceFrom, changes.sliceTo, changes.trackType, changes.trackId);
-  //       }
-  //     }
-  //   } else if (changes.trackType === 'synth') {
-  //     track = synthTracks[changes.trackId];
-  //     if (changes.chords && changes.chordsOrder) {
-  //       setSTChordsOrder(changes.chordsOrder, changes.trackId);
-  //       const chordsMap = new Map<number, ChordData>();
-  //       const synth = new PolySynth();
-  //       synth.sync();
-  //       let length: number = 0;
-  //       changes.chords.forEach((item) => {
-  //         chordsMap.set(item.id, item.data);
-  //       })
-  //       changes.chordsOrder.forEach((chord) => {
-  //         let data = chordsMap.get(chord);
-  //         if (!data) return;
-  //         let notes = chordToNotes.get(data.name);
-  //         if (!notes) return;
-  //         synth.triggerAttackRelease(notes, data.duration, length);
-  //         length += data.duration;
-  //       })
-  //       setSTActiveChords(chordsMap, changes.trackId);
-  //       setSTChordsOrder(changes.chordsOrder, changes.trackId);
-  //       setSTSynth(synth, changes.trackId);
-  //     }
-  //   } else {
-  //     console.log('wrong track type was sent from server: ' + changes.trackType);
-  //     return;
-  //   }
-  // }
-
   const saveProject = async () => {
-    const {data: presignedUrlData} = await axios.get(
-      'http://127.0.0.1:8000/presigned_url/' + props.projectId,
+    sendFilesOf(recordedTracks, 'recorded');
+    sendFilesOf(uploadedTracks, 'uploaded');
+    const options = {
+      withCredentials :true,
+      headers: {
+      'Access-Control-Allow-Credentials':'true'
+      }
+    };
+    const jsonType = 'application/json';
+    const presignedData = await axios.get(
+      'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=" + 'synth.json' + "&content=" + jsonType,
+      options
     );
-    sendFilesOf(recordedTracks, presignedUrlData);
-    sendFilesOf(uploadedTracks, presignedUrlData);
-    let form = new FormData();
-    Object.keys(presignedUrlData.fields).forEach(key => {
-      form.append(key, presignedUrlData.fields[key]);
-    });
-    form.append('synthTracks', JSON.stringify(synthTracks));
+    console.log(presignedData);
+    function replacer(key: any, value: any) {
+        if (key === 'synth') return undefined;
+        else if (value instanceof Map) {
+          return {
+            dataType: 'Map',
+            value: Array.from(value.entries()),
+          };
+        } else return value;
+    }
+    axios.put(presignedData.data, JSON.stringify(synthTracks, replacer), {headers: {
+      'Content-Type': jsonType
+    }})
+    console.log(JSON.stringify(synthTracks, replacer));
   }
 
-  const sendFilesOf = (tracks: Array<RTData | UTData>, presignedData: any) => {
-    tracks.forEach((track, index) => {
+  const sendFilesOf = (tracks: Array<RTData | UTData>, type: string) => {
+    const options = {
+      withCredentials :true,
+      headers: {
+      'Access-Control-Allow-Credentials':'true'
+      }
+    };
+    let contentType = type === 'recorded' ? 'audio/webm;codecs=opus' : 'audio/mpeg';
+    let postfix = type === 'recorded' ? '.webm' : '.mp3';
+    tracks.forEach(async (track, index) => {
+      const presignedData = await axios.get(
+        'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=" + type + "_" + index + postfix + "&content=" + contentType,
+        options
+      );
+      console.log(presignedData);
       let form = new FormData();
-      Object.keys(presignedData.fields).forEach(key => {
-        form.append(key, presignedData.fields[key]);
-      });
-      let buffer = track.player.player?.getBuffer().toMono().toArray();
-      if (!(buffer instanceof Float32Array)) {
+      let buffer = track.player.player?.getBuffer().get();
+      if (!buffer) {
         console.log('buffer array is' + buffer + 'in saveProject');
         return;
       }
-      form.append('recorded_' + index, new Blob([buffer], { type: 'audio/mp3' }));
-      axios.post(presignedData.url, form, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-         }              
-         }).then(function (response) {
-           console.log(response);
-          })
-           .catch(function (error) {
-            console.log(error);
-         });
+      const type_str = '/' + type + '_';
+      let blob = track.file;
+      blob && axios.put(presignedData.data, blob, {headers: {
+        'Content-Type': blob.type
+      }})
+      .then(function (response) {
+        console.log(response);
+      }).catch(function (error) {
+        console.log(error);
+      });
     })
   }
 
@@ -485,7 +419,7 @@ const Editor: React.FC<Props> = (props) => {
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addRecordedTrack}>Add recording track</Button>
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addSynthTrack}>Add synth track</Button>
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addUploadedTrack}>Add track for uploading</Button>
-          <Button className={classes.button} color='primary' variant='contained' size='small'>Save Project</Button>
+          <Button className={classes.button} color='primary' variant='contained' size='small' onClick={saveProject}>Save Project</Button>
         </Box>
       </div>
       {(recordedTracks.length !==0 || synthTracks.length !== 0 || uploadedTracks.length !== 0) && 
@@ -504,6 +438,7 @@ const Editor: React.FC<Props> = (props) => {
               slice={sliceTrack}
               connectEffect={connectEffect}
               disconnectEffect={disconnectEffect}
+              setFile={setRTFile}
             />;
           })}
           {synthTracks.map((data, index) => {
@@ -527,6 +462,7 @@ const Editor: React.FC<Props> = (props) => {
               deleteTrack={deleteTrack}
               slice={sliceTrack}
               sendEffect={connectEffect}
+              setFile={setUTFile}
             />
           })}
         </Box>

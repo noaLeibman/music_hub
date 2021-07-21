@@ -224,11 +224,17 @@ const App = () => {
   }
 
 
-  const createProjectThenSet = () => {
+  const createProjectThenSet = async () => {
     setMenuState(false);
     setCreateProject(false);
     setSelectedPage(Create);
-    const data = {project_name: projectname, email: signupemail}
+    const email = await tryMe();
+    // console.log(email);
+    if (!email) {
+      console.log('email undefined in create project');
+      return;
+    }
+    const data = {project_name: projectname, email: email}
     fetch('http://127.0.0.1:8000/create_project/', {
       method: 'POST',
       headers: {
@@ -248,14 +254,15 @@ const App = () => {
       console.error('Error:', error);
     });
   } 
-  const tryMe = () => {
-    axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true})
-    .then(res => {
-      const user = res.data;
-      console.log(user)
-
-    })
-    
+  const tryMe = async () => {
+    const res = await axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true});
+    console.log(res);
+    // .then(res => {
+    //   const user = res.data;
+    //   console.log(user)
+    //   setSignupEmail(user.email);
+    // })
+    return res.data.email;
   }
     return (
       <div className="App">
@@ -345,7 +352,7 @@ const App = () => {
           }
           { selectedPage === Create && 
             <Editor
-              projectId={"1234"}
+              projectId={currProjectId}
             />  
           }
         </Box>
