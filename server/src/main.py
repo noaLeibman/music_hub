@@ -272,27 +272,47 @@ async def file(recorded_files: List[UploadFile] = File(...)):
 #             file_object.write(file.file.read())
 #         files_dict_uploaded
 
-@app.get("/presigned_url/{project_id}")
-async def get_project_id(project_id : str):
-    id = project_id
-    lambda_client = boto3.client('lambda', 'eu-central-1')
-    lambda_payload = json.dumps({"project_id": id})
-
-    response = lambda_client.invoke(FunctionName='getFolderURL',
-                         InvocationType='RequestResponse',
-                         Payload=lambda_payload)
-    data = response['Payload'].read()
-    print(data)
-    return data['url']
+# @app.get("/presigned_url/")
+# async def get_project_id(project_id : str):
+#     id = project_id
+#     lambda_client = boto3.client('lambda', 'eu-central-1')
+#     lambda_payload = json.dumps({"project_id": id})
+#
+#     response = lambda_client.invoke(FunctionName='getFolderURL',
+#                          InvocationType='RequestResponse',
+#                          Payload=lambda_payload)
+#     data = response['Payload'].read()
+#     print(data)
+#     data_dict = json.loads(data)
+#     print(data_dict)
+#     return data_dict
 # @app.post("/project_save_data/{generated_id}")
 # async def get_body(projectData = schemas.ProjectDataIn, generated_id = str, db = Depends(get_db)):
 #     project_id = projectData.project_id
 #
 
+@app.get("/presigned_url/")
+async def get_project_id(project_id: str, filename: str, content: str):
+    id = project_id
+    content_type = content
+    file_name = filename
+    if content_type == 'audio/webm':
+        content_type += ';codecs=opus'
+    print(filename)
+    print(content_type)
+    lambda_client = boto3.client('lambda', 'eu-central-1')
+    lambda_payload = json.dumps({"project_id": id, "filename": filename, "Content-Type": content_type})
+
+    response = lambda_client.invoke(FunctionName='getFolderURLwebm',
+                                        InvocationType='RequestResponse',
+                                        Payload=lambda_payload)
+    data = response['Payload'].read()
+    print(data)
+    data_dict = json.loads(data)
+    print(data_dict)
+    return data_dict
 
 
-
-    return
 
 # app.queue_system = queue.Queue()
 # app.queue_limit = 5
