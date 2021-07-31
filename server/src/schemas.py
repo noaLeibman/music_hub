@@ -1,7 +1,6 @@
 from typing import List, Optional
-import typing as t
 from pydantic import BaseModel
-from models import UserInfo
+
 
 
 class MySchema(BaseModel):
@@ -36,21 +35,10 @@ class UserInfoBase(BaseModel):
     first_name: Optional[str] = None
     disabled: Optional[bool] = False
 
-    # def from_orm(cls:t.Type['UserInfoBase'], obj: UserInfo) -> 'UserInfoBase':
-    #     return cls(
-    #         obj.
-    #     )
-    #     pass
 
     class Config:
         orm_mode = True
 
-# class ProjectDataIn(BaseModel):
-#     synthTracks: str
-#     project_id: str
-#
-#     class Config:
-#         orm_mode = True
 
 class ProjectDataOut(BaseModel):
     project_id: str
@@ -61,11 +49,19 @@ class ProjectDataOut(BaseModel):
 class Project(BaseModel):
     project_name: str
     email: str
+    description: Optional[str] = None
 
     class Config:
         orm_mode = True
 
 
+class ProjectEdit(BaseModel):
+    project_name: str
+    email: str
+    uuid: str
+
+    class Config:
+        orm_mode = True
 class ProjectOut(BaseModel):
     project_name: str
     email: str
