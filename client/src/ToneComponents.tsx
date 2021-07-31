@@ -51,7 +51,7 @@ class Effects {
   }
 
   static getTremolo(level: number) {
-    return new Tone.Tremolo(level).toDestination();
+    return new Tone.Tremolo(level, 0.9).toDestination().start();
   }
 }
 
@@ -122,12 +122,21 @@ class PeaksPlayer {
     
   }
 
-  connect(node: any) {
-    this.player?.externalPlayer.connect(node);
+  connect(node: Tone.ToneAudioNode) {
+    try {
+      this.player?.externalPlayer.connect(node);
+    } catch (e) {
+      console.log('in PeaksPlayer.connect: ' + e);
+    }
   }
 
-  disconnect(node: any) {
-    this.player?.externalPlayer.disconnect(node);
+  disconnect(node: Tone.ToneAudioNode) {
+    console.log(this.player?.externalPlayer.context === node.context);
+    try {
+      this.player?.externalPlayer.disconnect(node);
+    } catch (e) {
+      console.log('in PeaksPlayer.disconnect: ' + e);
+    }
   }
 
   play() {
@@ -177,7 +186,7 @@ class Player {
     this.externalPlayer.sync().start(0);
 
     eventEmitter.emit('player.canplay');
-    console.log(eventEmitter);
+    // console.log(eventEmitter);
     Tone.Transport.schedule(() => {
       this.play();
     }, 0);

@@ -30,16 +30,9 @@ type Props = {
     setTracksLength: (value: number) => void;
     deleteTrack: (idx: number, type: string) => void;
     url: string | undefined;
-    connectEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
-    disconnectEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
+    addEffect: (effect: string, value: number, type: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
     setFile: (file: Blob, id: number) => void;
-}
-
-type EffectNodes = {
-    reverb: Tone.Reverb | undefined;
-    distortion: Tone.Distortion | undefined;
-    tremolo: Tone.Tremolo | undefined;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
@@ -51,9 +44,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     const [reverbValue, setReverbValue] = useState<number>(0);
     const [distortionValue, setDistortionValue] = useState<number>(0);
     const [tremoloValue, setTremoloValue] = useState<number>(0);
-    const [connectedEffects, setConnectedEffects] = useState<EffectNodes>({
-        reverb: undefined, distortion: undefined, tremolo: undefined
-    });
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
@@ -78,13 +68,13 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             await userMic.open();
             userMic.connect(recorder);
             if (props.url && !playerLoaded) {
+                console.log('loading url');
                 setPlayerLoaded(true);
                 await props.player?.load(props.url, zoomRef, overviewRef);
                 const length = props.player?.player?.getBuffer()?.duration;
                 if ( length && length > props.tracksLength) {
                     props.setTracksLength(length);
                 }
-                console.log(props.player.loaded);
             }
         }  
       
@@ -98,10 +88,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             console.log(e);
         }
     }, [props.tracksLength, props.player]);
-
-    useEffect(() => {
-        addEffect('reverb');
-    }, [reverbValue]);
 
     const startRecording = () => {
         const recorder = props.recorder?.get();
@@ -157,54 +143,54 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }
 
-    const addEffect = (effect: string) => {
-        let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
-        if (effect === 'reverb') {
-            if (reverbValue === 0) {
-                if (connectedEffects.reverb) {
-                    props.disconnectEffect(connectedEffects.reverb, 'recorded', props.id);
-                }
-                return;
-            }
-            toConnect = Effects.getReverb(reverbValue);
-            toDisconnect = connectedEffects.reverb;
-            setConnectedEffects({
-                reverb: toConnect,
-                distortion: connectedEffects.distortion,
-                tremolo: connectedEffects.tremolo,
-            });
-        } else if (effect === 'distortion') {
-            if (distortionValue === 0) {
-                if (connectedEffects.distortion) {
-                    props.disconnectEffect(connectedEffects.distortion, 'recorded', props.id);
-                }
-                return;
-            }
-            toConnect = Effects.getDistortion(distortionValue);
-            toDisconnect = connectedEffects.distortion;
-            setConnectedEffects({
-                reverb: connectedEffects.reverb,
-                distortion: toConnect,
-                tremolo: connectedEffects.tremolo,
-            });
-        } else if (effect === 'tremolo') {
-            if (tremoloValue === 0) {
-                if (connectedEffects.tremolo) {
-                    props.disconnectEffect(connectedEffects.tremolo, 'recorded', props.id);
-                }
-                return;
-            }
-            toConnect = Effects.getTremolo(tremoloValue);
-            toDisconnect = connectedEffects.tremolo;
-            setConnectedEffects({
-                reverb: connectedEffects.reverb,
-                distortion: connectedEffects.distortion,
-                tremolo: toConnect,
-            });
-        }
-        if (toDisconnect !== undefined) props.disconnectEffect(toDisconnect, 'recorded', props.id);
-        if (toConnect !== undefined) props.connectEffect(toConnect, 'recorded', props.id);
-    }
+    // const addEffect = (effect: string) => {
+    //     let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
+    //     if (effect === 'reverb') {
+    //         if (reverbValue === 0) {
+    //             if (connectedEffects.reverb) {
+    //                 props.disconnectEffect(connectedEffects.reverb, 'recorded', props.id);
+    //             }
+    //             return;
+    //         }
+    //         toConnect = Effects.getReverb(reverbValue);
+    //         toDisconnect = connectedEffects.reverb;
+    //         setConnectedEffects({
+    //             reverb: toConnect,
+    //             distortion: connectedEffects.distortion,
+    //             tremolo: connectedEffects.tremolo,
+    //         });
+    //     } else if (effect === 'distortion') {
+    //         if (distortionValue === 0) {
+    //             if (connectedEffects.distortion) {
+    //                 props.disconnectEffect(connectedEffects.distortion, 'recorded', props.id);
+    //             }
+    //             return;
+    //         }
+    //         toConnect = Effects.getDistortion(distortionValue);
+    //         toDisconnect = connectedEffects.distortion;
+    //         setConnectedEffects({
+    //             reverb: connectedEffects.reverb,
+    //             distortion: toConnect,
+    //             tremolo: connectedEffects.tremolo,
+    //         });
+    //     } else if (effect === 'tremolo') {
+    //         if (tremoloValue === 0) {
+    //             if (connectedEffects.tremolo) {
+    //                 props.disconnectEffect(connectedEffects.tremolo, 'recorded', props.id);
+    //             }
+    //             return;
+    //         }
+    //         toConnect = Effects.getTremolo(tremoloValue);
+    //         toDisconnect = connectedEffects.tremolo;
+    //         setConnectedEffects({
+    //             reverb: connectedEffects.reverb,
+    //             distortion: connectedEffects.distortion,
+    //             tremolo: toConnect,
+    //         });
+    //     }
+    //     if (toDisconnect !== undefined) props.disconnectEffect(toDisconnect, 'recorded', props.id);
+    //     if (toConnect !== undefined) props.connectEffect(toConnect, 'recorded', props.id);
+    // }
 
     const handleSliceFrom = (e: any) => {
         setSliceFrom(e.target.value);
@@ -228,12 +214,9 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }
 
-    const handleReverbChange = (event: any, newValue: number | number[]) => {
-        if (newValue as number - reverbValue >= 0.5 ||newValue as number - reverbValue <= -0.5) {
-           setReverbValue(newValue as number);
-            console.log('reverb change'); 
-        }  
-    }
+    // const commitEffectChange = (effect: string, event: any, newValue: number | number[]) => {
+    //     props.addEffect('reverb', reverbValue, 'recorded', props.id);
+    // }
 
     const renderControls = () => {
         return (
@@ -275,39 +258,49 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         </Button>
                     </Tooltip>
                 </ButtonGroup>
-                {connectedEffects.reverb && <Tooltip
+                {props.effects.reverb.on && <Tooltip
                     title="Reverb"
                     placement="left"
                 >
                     <Slider 
-                    value={reverbValue} 
-                    onChange={handleReverbChange}
-                    min={0}
-                    max={10}
-                    className={classes.slider}
-                    valueLabelDisplay="auto"
-                />  
+                        value={reverbValue} 
+                        onChange={(event: object, value: number | number[]) => setReverbValue(value as number)}
+                        onChangeCommitted={(event: object, value: number | number[]) =>{ 
+                            props.addEffect('reverb', value as number, 'recorded', props.id);
+                        }}
+                        min={0}
+                        max={10}
+                        className={classes.slider}
+                        valueLabelDisplay="auto"
+                    />  
                 </Tooltip>}
-                {connectedEffects.distortion && <Tooltip
+                {props.effects.distortion.on && <Tooltip
                     title="Distortion"
-                    placement="top"
+                    placement="left"
                 >
                     <Slider 
                     value={distortionValue} 
                     onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
-                    min={0}
-                    max={10}
+                    onChangeCommitted={(event: object, value: number | number[]) => 
+                        props.addEffect('distortion', value as number, 'recorded', props.id)
+                    }
+                    step={0.1}
+                    min={0.0}
+                    max={1.0}
                     className={classes.slider}
                     valueLabelDisplay="auto"
                 />  
                 </Tooltip>}
-                {connectedEffects.tremolo && <Tooltip
+                {props.effects.tremolo.on && <Tooltip
                     title="Tremolo"
-                    placement="top"
+                    placement="left"
                 >
                     <Slider 
                     value={tremoloValue} 
-                    onChange={(event: any, newValue: number | number[]) => setTremoloValue(newValue as number)}
+                    onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
+                    onChangeCommitted={(event: object, value: number | number[]) => {
+                        props.addEffect('tremolo', value as number, 'recorded', props.id);
+                    }}
                     min={0}
                     max={10}
                     className={classes.slider}
@@ -339,9 +332,9 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     open={Boolean(anchorEl)}
                     onClose={handleClose}
                 >
-                    <MenuItem onClick={() => addEffect('reverb')}>Reverb</MenuItem>
-                    <MenuItem onClick={() => addEffect('distortion')}>Distortion</MenuItem>
-                    <MenuItem onClick={() => addEffect('tremolo')}>Tremolo</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('reverb', reverbValue, 'recorded', props.id)}>Reverb</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('distortion', distortionValue, 'recorded', props.id)}>Distortion</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('tremolo', tremoloValue, 'recorded', props.id)}>Tremolo</MenuItem>
                 </Menu>
             </Grid>
             <Grid item xs={10} ref={zoomRef}>

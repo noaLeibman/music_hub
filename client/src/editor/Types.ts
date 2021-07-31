@@ -36,18 +36,20 @@ type RTData = {
 
 type UTData = {
   player: PeaksPlayer;
+  url?: string;
   file: Blob | undefined;
 }
 
 type SynthData = {
-  chords: ChordData[];
-  order: number[];
+  activeChords: ChordData[];
+  chordsOrder: number[];
+  length: number;
 }
 
 type ProjectJson = {
-  recordedUrls: string[];
-  synthTracks: SynthData[];
-  length: number;
+  recorded: string[];
+  uploaded: string[];
+  json: string[];
 }
 
 type ActionsJson = {

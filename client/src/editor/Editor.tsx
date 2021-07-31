@@ -12,8 +12,6 @@ import UploadedTrack from './UploadedTrack';
 import * as utils from 'audio-buffer-utils';
 import {ChordData, STData, RTData, UTData, ProjectJson, SynthData} from './Types';
 import axios from 'axios';
-import * as lamejs from 'lamejs';
-import {Mp3Encoder} from 'lamejs';
 
 const useStyles = makeStyles({
   root: {
@@ -42,30 +40,6 @@ const useStyles = makeStyles({
 type Props = {
   projectId: string;
 }
-
-// const testProject: ProjectJson = {
-//   recordedUrls: ['https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/The+Beatles+-+Penny+Lane.mp3'],
-//   synthTracks: [{
-//     chords: [
-//       {
-//         id: 1,
-//         name: 'A',
-//         duration: 1,
-//         durationStr: '1',
-//         startTime: 0,
-//       },
-//       {
-//         id: 2,
-//         name: 'C',
-//         duration: 1,
-//         durationStr: '1',
-//         startTime: 1,
-//       }
-//     ],
-//     order: [1, 2],
-//   }],
-//   length: 10,
-// }
 
 const Editor: React.FC<Props> = (props) => {
   const [recordedTracks, setRecordedTracks] = useState<RTData[]>([]);
@@ -185,7 +159,11 @@ const Editor: React.FC<Props> = (props) => {
         console.log('player undefined');
         return;
     }
-    player.connect(effect);
+    try {
+      player.connect(effect);
+    } catch (e) {
+      console.log("in connectEffect: " + e);
+    }
   }
 
   const disconnectEffect = (effect: Tone.ToneAudioNode, trackType: string, id: number) => {
@@ -199,57 +177,74 @@ const Editor: React.FC<Props> = (props) => {
         console.log('player undefined');
         return;
     }
-    player.disconnect(effect);
+    try {
+      player.disconnect(effect);
+    } catch (e) {
+      console.log('in disconnectEffect: ' + e);
+    }
   }
 
-//   const addEffect = (effect: string, value: number, trackData: RTData | UTData) => {
-//     let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
-//     if (effect === 'reverb') {
-//         if (value === 0) {
-//             if (data.ffects.reverb) {
-//                 props.disconnectEffect(connectedEffects.reverb, 'recorded', props.id);
-//             }
-//             return;
-//         }
-//         toConnect = Effects.getReverb(reverbValue);
-//         toDisconnect = connectedEffects.reverb;
-//         setConnectedEffects({
-//             reverb: toConnect,
-//             distortion: connectedEffects.distortion,
-//             tremolo: connectedEffects.tremolo,
-//         });
-//     } else if (effect === 'distortion') {
-//         if (distortionValue === 0) {
-//             if (connectedEffects.distortion) {
-//                 props.disconnectEffect(connectedEffects.distortion, 'recorded', props.id);
-//             }
-//             return;
-//         }
-//         toConnect = Effects.getDistortion(distortionValue);
-//         toDisconnect = connectedEffects.distortion;
-//         setConnectedEffects({
-//             reverb: connectedEffects.reverb,
-//             distortion: toConnect,
-//             tremolo: connectedEffects.tremolo,
-//         });
-//     } else if (effect === 'tremolo') {
-//         if (tremoloValue === 0) {
-//             if (connectedEffects.tremolo) {
-//                 props.disconnectEffect(connectedEffects.tremolo, 'recorded', props.id);
-//             }
-//             return;
-//         }
-//         toConnect = Effects.getTremolo(tremoloValue);
-//         toDisconnect = connectedEffects.tremolo;
-//         setConnectedEffects({
-//             reverb: connectedEffects.reverb,
-//             distortion: connectedEffects.distortion,
-//             tremolo: toConnect,
-//         });
-//     }
-//     if (toDisconnect !== undefined) props.disconnectEffect(toDisconnect, 'recorded', props.id);
-//     if (toConnect !== undefined) props.connectEffect(toConnect, 'recorded', props.id);
-// }
+  const addEffect = (effect: string, value: number, type: string, id: number) => {
+    let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
+    let trackData, copy;
+    if (type === 'recorded') {
+      trackData = recordedTracks[id];
+      copy = [...recordedTracks];
+    } else if (type === 'uploaded'){
+      trackData = uploadedTracks[id];
+      copy = [...uploadedTracks];
+      return;
+    } else {
+      console.log('wrong type sent to addEffect');
+      return;
+    }
+    if (effect === 'reverb') {
+      if (!trackData.effects.reverb.on) {
+        copy[id].effects.reverb.on = true;
+      }
+      if (value === 0) {
+          if (trackData.effects.reverb.node) {
+              disconnectEffect(trackData.effects.reverb.node, type, id);
+          }
+          setRecordedTracks(copy);
+          return;
+      }
+      toConnect = Effects.getReverb(value);
+      toDisconnect = trackData.effects.reverb.node;
+      copy[id].effects.reverb.node = toConnect;
+      console.log(toDisconnect);
+    } else if (effect === 'distortion') {
+      if (!trackData.effects.distortion.on) {
+        copy[id].effects.distortion.on = true;
+      }
+      if (value === 0) {
+          if (trackData.effects.distortion.node) {
+              disconnectEffect(trackData.effects.distortion.node, type, id);
+          }
+          return;
+      }
+      toConnect = Effects.getDistortion(value);
+      toDisconnect = trackData.effects.distortion.node;
+      copy[id].effects.distortion.node = toConnect;
+    } else if (effect === 'tremolo') {
+      if (!trackData.effects.tremolo.on) {
+        copy[id].effects.tremolo.on = true;
+      }
+      if (value === 0) {
+          if (trackData.effects.tremolo.node) {
+              disconnectEffect(trackData.effects.tremolo.node, type, id);
+          }
+          return;
+      }
+      toConnect = Effects.getTremolo(value);
+      toDisconnect = trackData.effects.tremolo.node;
+      copy[id].effects.tremolo.node = toConnect;
+    }
+    console.log('disconnecting: ' + toDisconnect + ', connecting: ' + toConnect);
+    if (toDisconnect !== undefined) disconnectEffect(toDisconnect, type, id);
+    if (toConnect !== undefined) connectEffect(toConnect, type, id);
+    if (copy) setRecordedTracks(copy);
+}
 
   const sliceTrack = (sliceFrom: number, sliceTo: number, trackType: string, id: number) => {
     if (sliceFrom === sliceTo) {
@@ -289,8 +284,8 @@ const Editor: React.FC<Props> = (props) => {
     }
   }
 
-  const createFromJson = (json: ProjectJson) => {
-    const rTracks: RTData[] = json.recordedUrls.map((url: string, index: number) => {
+  const createFromJson = async (projectJson: ProjectJson) => {
+    const rTracks: RTData[] = projectJson.recorded.map((url: string, index: number) => {
       return  {
         player: new PeaksPlayer(),
         url: url,
@@ -311,29 +306,42 @@ const Editor: React.FC<Props> = (props) => {
         file: undefined,
       }
     });
-    const sTracks: STData[] = json.synthTracks.map((data: SynthData, index: number) => {
-      const newMap = new Map();
-      const newSynth = new Tone.PolySynth().toDestination();
-      newSynth.sync();
-      let length = 0;
-      data.chords.forEach((chord: ChordData) => {
-        length += chord.duration;
-        newMap.set(chord.id, chord);
-        const notes = chordToNotes.get(chord.name);
-        if (!notes) return;
-        newSynth.triggerAttackRelease(notes, chord.durationStr, chord.startTime);
-      })
+    const uTracks: UTData[] = projectJson.uploaded.map((url: string, index: number) => {
       return {
-        activeChords: newMap,
-        chordsOrder: data.order,
-        synth: newSynth,
-        length: length,
-        key: index,
+        player: new PeaksPlayer(),
+        url: url,
+        file: undefined,
       }
     });
-    setLongestTrack(json.length);
+    if (projectJson.json.length) {
+      const synthData = await axios.get(projectJson.json[0]);
+      console.log(synthData);
+      const sTracks: STData[] = synthData.data.map((data: any, index: number) => {
+        const newMap = new Map();
+        const newSynth = new Tone.PolySynth().toDestination();
+        newSynth.sync();
+        let length = 0;
+        data.activeChords?.forEach((chord: any) => {
+          chord = chord[1];
+          length += chord.duration;
+          newMap.set(chord.id, chord);
+          const notes = chordToNotes.get(chord.name);
+          if (!notes) return;
+          newSynth.triggerAttackRelease(notes, chord.durationStr, chord.startTime);
+        })
+        return {
+          activeChords: newMap,
+          chordsOrder: data.chordsOrder,
+          synth: newSynth,
+          length: length,
+          key: index,
+        }
+      });
+      setSynthTracks(sTracks);
+    }
+    // setLongestTrack(json.length);
     setRecordedTracks(rTracks);
-    setSynthTracks(sTracks);
+    setUploadedTracks(uTracks);
   }
 
   const saveProject = async () => {
@@ -354,10 +362,7 @@ const Editor: React.FC<Props> = (props) => {
     function replacer(key: any, value: any) {
         if (key === 'synth') return undefined;
         else if (value instanceof Map) {
-          return {
-            dataType: 'Map',
-            value: Array.from(value.entries()),
-          };
+          return Array.from(value.entries());
         } else return value;
     }
     axios.put(presignedData.data, JSON.stringify(synthTracks, replacer), {headers: {
@@ -400,6 +405,18 @@ const Editor: React.FC<Props> = (props) => {
     })
   }
 
+  const getProject = async () => {
+    const options = {
+      withCredentials :true,
+      headers: {
+      'Access-Control-Allow-Credentials':'true'
+      }
+    };
+    const projectData = await axios.get('http://127.0.0.1:8000/presigned_get/?project_id=' + 'c99ae5aa-b6ca-4e28-8967-5d557edb0316', options);
+    console.log(projectData);
+    createFromJson(JSON.parse(projectData.data));
+  }
+
   return (
     <Box>
       <div style={{width: '120px', float: 'left'}}>
@@ -420,6 +437,7 @@ const Editor: React.FC<Props> = (props) => {
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addSynthTrack}>Add synth track</Button>
           <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addUploadedTrack}>Add track for uploading</Button>
           <Button className={classes.button} color='primary' variant='contained' size='small' onClick={saveProject}>Save Project</Button>
+          <Button className={classes.button} color='primary' variant='contained' size='small' onClick={getProject}>Get Project</Button>
         </Box>
       </div>
       {(recordedTracks.length !==0 || synthTracks.length !== 0 || uploadedTracks.length !== 0) && 
@@ -436,8 +454,7 @@ const Editor: React.FC<Props> = (props) => {
               url={data.url}
               deleteTrack={deleteTrack}
               slice={sliceTrack}
-              connectEffect={connectEffect}
-              disconnectEffect={disconnectEffect}
+              addEffect={addEffect}
               setFile={setRTFile}
             />;
           })}
@@ -458,10 +475,11 @@ const Editor: React.FC<Props> = (props) => {
           {uploadedTracks.map((data, index) => {
             return <UploadedTrack
               player={data.player}
+              url={data.url ? data.url : undefined}
               id={index}
               deleteTrack={deleteTrack}
               slice={sliceTrack}
-              sendEffect={connectEffect}
+              addEffect={addEffect}
               setFile={setUTFile}
             />
           })}

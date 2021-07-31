@@ -1,4 +1,4 @@
-import {  useRef, useState } from 'react';
+import {  useEffect, useRef, useState } from 'react';
 import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip } from '@material-ui/core';
 import { Effects, PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
@@ -11,8 +11,9 @@ import * as Tone from 'tone';
 type Props = {
     id: number;
     player: PeaksPlayer;
+    url: string | undefined;
     deleteTrack: (idx: number, type: string) => void;
-    sendEffect: (effect: Tone.ToneAudioNode, trackType: string, id: number) => void;
+    addEffect: (effect: string, value: number, type: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
     setFile: (file: Blob, id: number) => void;
 }
@@ -40,9 +41,22 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     const [slice, setSlice] = useState<boolean>(false);
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
+    const [playerLoaded, setPlayerLoaded] = useState<boolean>(false)
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
+
+    useEffect(() => {
+        async function initProps() {  
+            if (props.url && !playerLoaded) {
+                console.log('loading url');
+                setPlayerLoaded(true);
+                await props.player?.load(props.url, zoomRef, overviewRef);
+            }
+        }  
+      
+        initProps();
+    }, [props, playerLoaded]);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
