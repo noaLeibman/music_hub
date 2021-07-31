@@ -2,11 +2,10 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
-import sqlalchemy as sa
 import uuid
 from database import Base, engine
 import typing as t
-import os
+
 
 
 def gen_uuid_4() -> str:
@@ -41,12 +40,12 @@ class Project(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     email = Column(String, index=True)
     project_name = Column(String, unique=True)
-    # better name
-    json_data = Column(String(5000))
+    last_edited = Column(String, default=datetime.utcnow)
+    description = Column(String)
     users = relationship("UserInfo", secondary="projects_users", backref="projects_users", lazy="dynamic")
 
-    def change_json_data(self, data):
-        self.json_data = data
+    def edited_at(self):
+        self.last_edited = datetime.utcnow()
 
     def sign_up(self, user: UserInfo):
         self.users.append(user)
