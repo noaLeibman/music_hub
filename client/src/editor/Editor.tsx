@@ -10,7 +10,7 @@ import RecordedTrack from "./RecordedTrack";
 import {SynthTrack, chordToNotes} from './SynthTrack';
 import UploadedTrack from './UploadedTrack';
 import * as utils from 'audio-buffer-utils';
-import {ChordData, STData, RTData, UTData, ProjectJson, SynthData} from './Types';
+import {ChordData, STData, RTData, UTData, ProjectJson} from './Types';
 import axios from 'axios';
 
 const useStyles = makeStyles({
@@ -99,7 +99,25 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const addUploadedTrack = () => {
-    setUploadedTracks([...uploadedTracks, {player: new PeaksPlayer(), file: undefined}])
+    const track: UTData = {
+      player: new PeaksPlayer(),
+      effects: {
+        reverb: {
+          on: false,
+          node: undefined,
+        },
+        distortion: {
+          on: false,
+          node: undefined,
+        },
+        tremolo: {
+          on: false,
+          node: undefined,
+        }
+      },
+      file: undefined,
+    }
+    setUploadedTracks([...uploadedTracks, track]);
   }
   
   const play = () => {
@@ -193,7 +211,6 @@ const Editor: React.FC<Props> = (props) => {
     } else if (type === 'uploaded'){
       trackData = uploadedTracks[id];
       copy = [...uploadedTracks];
-      return;
     } else {
       console.log('wrong type sent to addEffect');
       return;
@@ -206,7 +223,7 @@ const Editor: React.FC<Props> = (props) => {
           if (trackData.effects.reverb.node) {
               disconnectEffect(trackData.effects.reverb.node, type, id);
           }
-          setRecordedTracks(copy);
+          type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy);
           return;
       }
       toConnect = Effects.getReverb(value);
@@ -221,6 +238,7 @@ const Editor: React.FC<Props> = (props) => {
           if (trackData.effects.distortion.node) {
               disconnectEffect(trackData.effects.distortion.node, type, id);
           }
+          type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy)
           return;
       }
       toConnect = Effects.getDistortion(value);
@@ -234,6 +252,7 @@ const Editor: React.FC<Props> = (props) => {
           if (trackData.effects.tremolo.node) {
               disconnectEffect(trackData.effects.tremolo.node, type, id);
           }
+          type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy)
           return;
       }
       toConnect = Effects.getTremolo(value);
@@ -243,7 +262,7 @@ const Editor: React.FC<Props> = (props) => {
     console.log('disconnecting: ' + toDisconnect + ', connecting: ' + toConnect);
     if (toDisconnect !== undefined) disconnectEffect(toDisconnect, type, id);
     if (toConnect !== undefined) connectEffect(toConnect, type, id);
-    if (copy) setRecordedTracks(copy);
+    if (copy) type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy);
 }
 
   const sliceTrack = (sliceFrom: number, sliceTo: number, trackType: string, id: number) => {
@@ -309,6 +328,20 @@ const Editor: React.FC<Props> = (props) => {
     const uTracks: UTData[] = projectJson.uploaded.map((url: string, index: number) => {
       return {
         player: new PeaksPlayer(),
+        effects: {
+          reverb: {
+            on: false,
+            node: undefined,
+          },
+          distortion: {
+            on: false,
+            node: undefined,
+          },
+          tremolo: {
+            on: false,
+            node: undefined,
+          }
+        },
         url: url,
         file: undefined,
       }
@@ -355,7 +388,7 @@ const Editor: React.FC<Props> = (props) => {
     };
     const jsonType = 'application/json';
     const presignedData = await axios.get(
-      'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=" + 'synth.json' + "&content=" + jsonType,
+      'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=synth.json&content=" + jsonType,
       options
     );
     console.log(presignedData);
@@ -386,13 +419,11 @@ const Editor: React.FC<Props> = (props) => {
         options
       );
       console.log(presignedData);
-      let form = new FormData();
       let buffer = track.player.player?.getBuffer().get();
       if (!buffer) {
         console.log('buffer array is' + buffer + 'in saveProject');
         return;
       }
-      const type_str = '/' + type + '_';
       let blob = track.file;
       blob && axios.put(presignedData.data, blob, {headers: {
         'Content-Type': blob.type
@@ -412,7 +443,7 @@ const Editor: React.FC<Props> = (props) => {
       'Access-Control-Allow-Credentials':'true'
       }
     };
-    const projectData = await axios.get('http://127.0.0.1:8000/presigned_get/?project_id=' + 'c99ae5aa-b6ca-4e28-8967-5d557edb0316', options);
+    const projectData = await axios.get('http://127.0.0.1:8000/presigned_get/?project_id=c99ae5aa-b6ca-4e28-8967-5d557edb0316', options);
     console.log(projectData);
     createFromJson(JSON.parse(projectData.data));
   }
@@ -475,6 +506,7 @@ const Editor: React.FC<Props> = (props) => {
           {uploadedTracks.map((data, index) => {
             return <UploadedTrack
               player={data.player}
+              effects={data.effects}
               url={data.url ? data.url : undefined}
               id={index}
               deleteTrack={deleteTrack}

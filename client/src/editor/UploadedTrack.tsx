@@ -1,17 +1,18 @@
 import {  useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip } from '@material-ui/core';
-import { Effects, PeaksPlayer } from '../ToneComponents';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles } from '@material-ui/core';
+import { PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
 import {useDropzone} from 'react-dropzone';
-import * as Tone from 'tone';
+import { EffectsData } from './Types';
 
 type Props = {
     id: number;
     player: PeaksPlayer;
     url: string | undefined;
+    effects: EffectsData;
     deleteTrack: (idx: number, type: string) => void;
     addEffect: (effect: string, value: number, type: string, id: number) => void;
     slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
@@ -34,6 +35,15 @@ const baseStyle = {
     outline: 'none',
     transition: 'border .24s ease-in-out'
   };
+
+const useStyles = makeStyles({
+    slider: {
+        maxWidth: '70%',
+    },
+    effectIcon: {
+        maxWidth: '30%',
+    }
+});
   
 
 const UploadedTrack: React.FC<Props> =  (props) => {
@@ -41,10 +51,14 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     const [slice, setSlice] = useState<boolean>(false);
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
-    const [playerLoaded, setPlayerLoaded] = useState<boolean>(false)
+    const [playerLoaded, setPlayerLoaded] = useState<boolean>(false);
+    const [reverbValue, setReverbValue] = useState<number>(0);
+    const [distortionValue, setDistortionValue] = useState<number>(0);
+    const [tremoloValue, setTremoloValue] = useState<number>(0);
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
+    const classes = useStyles();
 
     useEffect(() => {
         async function initProps() {  
@@ -78,11 +92,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
         accept: 'audio/*',
         onDrop: acceptFile,
         maxFiles: 1,
-      });
-
-    const addEffect = (effect: string) => {
-        // props.sendEffect(effect, 'recorded', props.id);
-    }
+    });
 
     const handleSliceFrom = (e: any) => {
         setSliceFrom(e.target.value);
@@ -135,6 +145,55 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                         </Button>
                     </Tooltip>
                 </ButtonGroup>
+                {props.effects.reverb.on && <Tooltip
+                    title="Reverb"
+                    placement="left"
+                >
+                    <Slider 
+                        value={reverbValue} 
+                        onChange={(event: object, value: number | number[]) => setReverbValue(value as number)}
+                        onChangeCommitted={(event: object, value: number | number[]) =>{ 
+                            props.addEffect('reverb', value as number, 'uploaded', props.id);
+                        }}
+                        min={0}
+                        max={10}
+                        className={classes.slider}
+                        valueLabelDisplay="auto"
+                    />  
+                </Tooltip>}
+                {props.effects.distortion.on && <Tooltip
+                    title="Distortion"
+                    placement="left"
+                >
+                    <Slider 
+                    value={distortionValue} 
+                    onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
+                    onChangeCommitted={(event: object, value: number | number[]) => 
+                        props.addEffect('distortion', value as number, 'uploaded', props.id)
+                    }
+                    step={0.1}
+                    min={0.0}
+                    max={1.0}
+                    className={classes.slider}
+                    valueLabelDisplay="auto"
+                />  
+                </Tooltip>}
+                {props.effects.tremolo.on && <Tooltip
+                    title="Tremolo"
+                    placement="left"
+                >
+                    <Slider 
+                    value={tremoloValue} 
+                    onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
+                    onChangeCommitted={(event: object, value: number | number[]) => {
+                        props.addEffect('tremolo', value as number, 'uploaded', props.id);
+                    }}
+                    min={0}
+                    max={10}
+                    className={classes.slider}
+                    valueLabelDisplay="auto"
+                />  
+                </Tooltip>}
             </Box>
         );
     }
@@ -160,9 +219,9 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                     open={Boolean(anchorEl)}
                     onClose={handleClose}
                 >
-                    <MenuItem onClick={() => addEffect('reverb')}>Reverb</MenuItem>
-                    <MenuItem onClick={() => addEffect('distortion')}>Distortion</MenuItem>
-                    <MenuItem>Vibrato</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('reverb', reverbValue, 'uploaded', props.id)}>Reverb</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('distortion', distortionValue, 'uploaded', props.id)}>Distortion</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('tremolo', tremoloValue, 'uploaded', props.id)}>Tremolo</MenuItem>
                 </Menu>
             </Grid>
             <Grid item xs={10} ref={zoomRef}>

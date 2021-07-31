@@ -36,6 +36,7 @@ type RTData = {
 
 type UTData = {
   player: PeaksPlayer;
+  effects: EffectsData;
   url?: string;
   file: Blob | undefined;
 }

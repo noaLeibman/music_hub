@@ -3,12 +3,11 @@ import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Bo
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
-import { Effects, Recorder, UserMedia, PeaksPlayer } from '../ToneComponents';
+import { Recorder, UserMedia, PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
-import * as Tone from 'tone';
 import { EffectsData } from './Types'
 
 const useStyles = makeStyles({
@@ -143,55 +142,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }
 
-    // const addEffect = (effect: string) => {
-    //     let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
-    //     if (effect === 'reverb') {
-    //         if (reverbValue === 0) {
-    //             if (connectedEffects.reverb) {
-    //                 props.disconnectEffect(connectedEffects.reverb, 'recorded', props.id);
-    //             }
-    //             return;
-    //         }
-    //         toConnect = Effects.getReverb(reverbValue);
-    //         toDisconnect = connectedEffects.reverb;
-    //         setConnectedEffects({
-    //             reverb: toConnect,
-    //             distortion: connectedEffects.distortion,
-    //             tremolo: connectedEffects.tremolo,
-    //         });
-    //     } else if (effect === 'distortion') {
-    //         if (distortionValue === 0) {
-    //             if (connectedEffects.distortion) {
-    //                 props.disconnectEffect(connectedEffects.distortion, 'recorded', props.id);
-    //             }
-    //             return;
-    //         }
-    //         toConnect = Effects.getDistortion(distortionValue);
-    //         toDisconnect = connectedEffects.distortion;
-    //         setConnectedEffects({
-    //             reverb: connectedEffects.reverb,
-    //             distortion: toConnect,
-    //             tremolo: connectedEffects.tremolo,
-    //         });
-    //     } else if (effect === 'tremolo') {
-    //         if (tremoloValue === 0) {
-    //             if (connectedEffects.tremolo) {
-    //                 props.disconnectEffect(connectedEffects.tremolo, 'recorded', props.id);
-    //             }
-    //             return;
-    //         }
-    //         toConnect = Effects.getTremolo(tremoloValue);
-    //         toDisconnect = connectedEffects.tremolo;
-    //         setConnectedEffects({
-    //             reverb: connectedEffects.reverb,
-    //             distortion: connectedEffects.distortion,
-    //             tremolo: toConnect,
-    //         });
-    //     }
-    //     if (toDisconnect !== undefined) props.disconnectEffect(toDisconnect, 'recorded', props.id);
-    //     if (toConnect !== undefined) props.connectEffect(toConnect, 'recorded', props.id);
-    // }
-
     const handleSliceFrom = (e: any) => {
         setSliceFrom(e.target.value);
     }
@@ -213,10 +163,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             props.deleteTrack(props.id, 'recorded');
         }
     }
-
-    // const commitEffectChange = (effect: string, event: any, newValue: number | number[]) => {
-    //     props.addEffect('reverb', reverbValue, 'recorded', props.id);
-    // }
 
     const renderControls = () => {
         return (

@@ -1,6 +1,6 @@
 import { Button, Card, CardActions, CardContent, IconButton, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
 import { PeaksInstance } from 'peaks.js'
@@ -41,9 +41,9 @@ const useStyles = makeStyles({
 const ProjectCard: React.FC<ProjectProps> = (props) => {
     const classes = useStyles();
     const [playing, setPlaying] = useState<boolean>(false);
-    const [loaded, setLoaded] = useState<boolean>(false);
+    // const [loaded, setLoaded] = useState<boolean>(false);
     const waveformRef = useRef(null);
-    const dummyRef = useRef(null);
+    // const dummyRef = useRef(null);
 
     const onClickPlay = () => {
         if (playing) {
