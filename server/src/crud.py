@@ -56,8 +56,8 @@ def get_projects_info(db: Session, user_mail : str):
             project_dict["author"] = author_name
             all_projects_dict[count] = project_dict
 
-    data = json.dumps(all_projects_dict)
-    return data
+
+    return all_projects_dict
 
 
 def create_project_2(db: Session, project: schemas.Project):

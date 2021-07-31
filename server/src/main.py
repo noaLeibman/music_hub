@@ -169,9 +169,22 @@ async def read_users_me(
 
 @app.get("/project/{email}")
 async def get_project(mail: str, db: Session = Depends(get_db)):
-    projects_list = crud.get_projects_info(db, mail)
+    projects_dict = crud.get_projects_info(db, mail)
+    lambda_client = boto3.client('lambda', 'eu-central-1')
+    for project in projects_dict.items():
+        project_id = project[1]["project_id"]
 
-    return projects_list
+        lambda_payload = json.dumps({"project_id": project_id})
+
+        response = lambda_client.invoke(FunctionName='getProjectPreviewImage',
+                                    InvocationType='RequestResponse',
+                                    Payload=lambda_payload)
+
+        data = response['Payload'].read()
+        data = json.loads(data)
+        project[1]["image_url"] = data
+    dict_json = json.dumps(projects_dict)
+    return dict_json
 
 
 @app.post("/users/", response_model=schemas.UserCreate)
