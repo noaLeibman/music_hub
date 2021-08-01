@@ -31,8 +31,7 @@ class Item(ItemBase):
 
 class UserInfoBase(BaseModel):
     email: str
-    full_name: Optional[str] = None
-    first_name: Optional[str] = None
+    full_name: str
     disabled: Optional[bool] = False
 
 

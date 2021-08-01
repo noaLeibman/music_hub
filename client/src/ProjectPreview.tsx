@@ -6,11 +6,13 @@ import PauseIcon from '@material-ui/icons/Pause';
 import { PeaksInstance } from 'peaks.js'
 
 type ProjectProps = {
-    url: string;
-    projectName: string;
-    authorName: string;
+
+    image_url?: string;
+    project_name: string;
+    author: string;
     description: string;
-    peaks: PeaksInstance;
+    peaks?: PeaksInstance;
+
 }
 
 const useStyles = makeStyles({
@@ -47,10 +49,10 @@ const ProjectCard: React.FC<ProjectProps> = (props) => {
 
     const onClickPlay = () => {
         if (playing) {
-            props.peaks.player.pause();
+            props.peaks?.player.pause();
             setPlaying(false);
         } else {
-            props.peaks.player.play();
+            props.peaks?.player.play();
             setPlaying(true);
         }
     }
@@ -60,13 +62,13 @@ const ProjectCard: React.FC<ProjectProps> = (props) => {
             <Card className={classes.root} variant="outlined">
                 <CardContent>
                     <Typography variant="h5" component="h2">
-                    Project name
+                    {props.project_name}
                     </Typography>
                     <Typography className={classes.pos} color="textSecondary">
-                    Author name
+                    {props.author}
                     </Typography>
                     <Typography variant="body2" component="p">
-                    Description, bla bla bla.
+                    {props.description}
                     </Typography>
                 </CardContent>
                 <div ref={waveformRef}/>

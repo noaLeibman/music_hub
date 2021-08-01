@@ -16,9 +16,7 @@ from jose import jwt
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
-
 import crud
-import models
 import schemas
 from database import SessionLocal
 
@@ -172,10 +170,10 @@ async def read_users_me(
 @app.get("/projects_recent")
 async def get_project(db:Session = Depends(get_db)):
     uuid_list = crud.get_all_projects_by_date(db, 10)
-    projects_dict = crud.get_projects_metadata(db, uuid_list)
+    projects_list = crud.get_projects_metadata(db, uuid_list)
     lambda_client = boto3.client('lambda', 'eu-central-1')
-    for project in projects_dict.items():
-        project_id = project[1]["project_id"]
+    for project in projects_list:
+        project_id = project["project_id"]
 
         lambda_payload = json.dumps({"project_id": project_id})
 
@@ -185,19 +183,19 @@ async def get_project(db:Session = Depends(get_db)):
 
         data = response['Payload'].read()
         data = json.loads(data)
-        project[1]["image_url"] = data
-    dict_json = json.dumps(projects_dict)
+        project["image_url"] = data
+    dict_json = json.dumps(projects_list)
     return dict_json
 
 @app.get("/project/{email}")
 async def get_project(mail: str, db: Session = Depends(get_db)):
     uuid_list = crud.get_user_projects_uuid(db, mail)
-    projects_dict = crud.get_projects_metadata(db, uuid_list)
+    projects_list = crud.get_projects_metadata(db, uuid_list)
 
 
     lambda_client = boto3.client('lambda', 'eu-central-1')
-    for project in projects_dict.items():
-        project_id = project[1]["project_id"]
+    for project in projects_list:
+        project_id = project["project_id"]
 
         lambda_payload = json.dumps({"project_id": project_id})
 
@@ -207,8 +205,8 @@ async def get_project(mail: str, db: Session = Depends(get_db)):
 
         data = response['Payload'].read()
         data = json.loads(data)
-        project[1]["image_url"] = data
-    dict_json = json.dumps(projects_dict)
+        project["image_url"] = data
+    dict_json = json.dumps(projects_list)
     return dict_json
 
 

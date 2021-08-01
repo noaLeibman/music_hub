@@ -22,7 +22,6 @@ def get_all_projects_by_date(db: Session, limit: int = 10):
     uuid_list = []
     for project in projects:
         uuid_list.append(project.uuid)
-
     return uuid_list
 
 
@@ -48,7 +47,7 @@ def get_project_by_id(db: Session, id: str):
 
 
 def get_projects_metadata(db:Session, uuid_list : List[str]):
-    all_projects_dict = dict()
+    all_projects_list = []
 
     if len(uuid_list) > 0:
         for count, project in enumerate(uuid_list):
@@ -58,9 +57,8 @@ def get_projects_metadata(db:Session, uuid_list : List[str]):
             project_dict["project_id"] = project_item.uuid
             project_dict["description"] = project_item.description
             project_dict["author"] = project_item.author_name
-            all_projects_dict[count] = project_dict
-
-    return all_projects_dict
+            all_projects_list.append(project_dict)
+    return all_projects_list
 
 def get_user_projects_uuid(db: Session, user_mail: str):
     user = get_user_by_email(db, user_mail)
@@ -78,9 +76,7 @@ def create_project_2(db: Session, project: schemas.Project):
     db_project_to_add.sign_up(user_to_add)
     db.add(db_project_to_add)
     db.commit()
-
     db.refresh(db_project_to_add)
-
     return db_project_to_add
 
 
