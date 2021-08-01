@@ -38,16 +38,16 @@ const chordToNotes = new Map([
 const colors = ['#f0ccc9', '#f5e1cb', '#edebc7', '#d7e8be', '#c8e6e3', '#c3e3e0'];
 
 type Props = {
-    id: number;
+    id: string;
     initialLength: number;
     setTracksLength: (value: number) => void;
     synth: Tone.PolySynth;
     activeChords: Map<number,ChordData>;
     chordsOrder: number[];
-    setActiveChords: (newActiveChords: Map<number,ChordData>, idx: number) => void;
-    setChordsOrder: (newOrder: number[], idx: number) => void;
-    setSynth: (newSynth: Tone.PolySynth, idx: number) => void;
-    deleteTrack: (idx: number, type: string) => void;
+    setActiveChords: (newActiveChords: Map<number,ChordData>, id: string) => void;
+    setChordsOrder: (newOrder: number[], id: string) => void;
+    setSynth: (newSynth: Tone.PolySynth, id: string) => void;
+    deleteTrack: (id: string, type: string) => void;
 }
 
 const SynthTrack: React.FC<Props> = (props) => {
@@ -210,6 +210,7 @@ const SynthTrack: React.FC<Props> = (props) => {
 
     const getChordViews = () => {
         const {chordsOrder, activeChords} = props;
+        if (!chordsOrder || !activeChords) return;
         return chordsOrder.map((id, index) => {
             const currData = activeChords.get(id);
             if (!currData) {

@@ -19,6 +19,7 @@ type STData = {
 type EffectNode = {
   on: boolean;
   node: Tone.ToneAudioNode | undefined;
+  level?: number;
 }
 
 type EffectsData = {
@@ -27,19 +28,24 @@ type EffectsData = {
   tremolo: EffectNode;
 }
 
-type RTData = {
+type AudioTrackData = {
+  type: string;
   player: PeaksPlayer;
   effects: EffectsData;
   url: string | undefined;
   file: Blob | undefined;
+  slices: number[][];
+  trackInfo: TrackInfo | undefined;
 }
 
-type UTData = {
-  player: PeaksPlayer;
-  effects: EffectsData;
-  url?: string;
-  file: Blob | undefined;
-}
+// type UTData = {
+//   player: PeaksPlayer;
+//   effects: EffectsData;
+//   url?: string;
+//   file: Blob | undefined;
+//   slices: number[][];
+//   trackInfo: TrackInfo | undefined;
+// }
 
 type SynthData = {
   activeChords: ChordData[];
@@ -47,26 +53,30 @@ type SynthData = {
   length: number;
 }
 
-type ProjectJson = {
-  recorded: string[];
-  uploaded: string[];
+type ProjectUrls = {
+  recorded: {
+    url: string;
+    id: string;
+  }[];
+  uploaded: {
+    url: string;
+    id: string;
+  }[];
   json: string[];
 }
 
-type ActionsJson = {
-  projectId: string;
+type TrackInfo = {
+  trackId: string;
   trackType: string;
-  trackId: number;
-  newTrack: boolean;
-  blob?: Blob;
-  effect?: string;
-  sliceFrom?: number;
-  sliceTo?: number;
-  chordsOrder?: number[];
-  chords?: {
-    id: number;
-    data: ChordData;
-  }[];
+  reverb?: number;
+  distortion?: number;
+  tremolo?: number;
+  slices: number[][];
 }
 
-export type {ChordData, STData, RTData, UTData, ActionsJson, ProjectJson, SynthData, EffectsData};
+type ProjectData = {
+  synthTracks: {id: string, data: STData}[];
+  audioTracks: TrackInfo[];
+}
+
+export type {ChordData, STData, AudioTrackData, ProjectUrls, ProjectData, SynthData, EffectsData, TrackInfo};

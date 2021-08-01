@@ -8,7 +8,7 @@ import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
-import { EffectsData } from './Types'
+import { EffectsData, TrackInfo } from './Types'
 
 const useStyles = makeStyles({
     slider: {
@@ -20,18 +20,19 @@ const useStyles = makeStyles({
 });
 
 type Props = {
-    id: number;
+    id: string
     player: PeaksPlayer;
     effects: EffectsData;
     recorder: Recorder | undefined;
     userMic: UserMedia | undefined;
     tracksLength: number;
     setTracksLength: (value: number) => void;
-    deleteTrack: (idx: number, type: string) => void;
+    deleteTrack: (id: string, type: string) => void;
     url: string | undefined;
-    addEffect: (effect: string, value: number, type: string, id: number) => void;
-    slice: (sliceFrom: number, sliceTo: number, trackType: string, id: number) => void;
-    setFile: (file: Blob, id: number) => void;
+    addEffect: (effect: string, value: number, id: string) => void;
+    slice: (sliceFrom: number, sliceTo: number, id: string) => void;
+    setFile: (file: Blob, id: string) => void;
+    trackInfo: TrackInfo | undefined;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
@@ -39,7 +40,9 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     const [slice, setSlice] = useState<boolean>(false);
     const [sliceFrom, setSliceFrom] = useState<number>(0);
     const [sliceTo, setSliceTo] = useState<number>(0);
-    const [playerLoaded, setPlayerLoaded] = useState<boolean>(false)
+    const [needLoading, setNeedLoading] = useState<boolean>(true);
+    const [playerLoaded, setPlayerLoaded] = useState<boolean>(false);
+    const [trackInfoApplied, setTrackInfoApplied] = useState<boolean>(false);
     const [reverbValue, setReverbValue] = useState<number>(0);
     const [distortionValue, setDistortionValue] = useState<number>(0);
     const [tremoloValue, setTremoloValue] = useState<number>(0);
@@ -66,10 +69,10 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             }
             await userMic.open();
             userMic.connect(recorder);
-            if (props.url && !playerLoaded) {
+            if (props.url && needLoading) {
                 console.log('loading url');
-                setPlayerLoaded(true);
-                await props.player?.load(props.url, zoomRef, overviewRef);
+                setNeedLoading(false);
+                await props.player?.load(props.url, zoomRef, overviewRef).then(() => setPlayerLoaded(true));
                 const length = props.player?.player?.getBuffer()?.duration;
                 if ( length && length > props.tracksLength) {
                     props.setTracksLength(length);
@@ -78,15 +81,36 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }  
       
         initProps();
-    }, [props, playerLoaded]);
+    }, [props, needLoading, playerLoaded]);
 
     useEffect(() => {
-        try {
-          props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});  
-        } catch (e) {
-            console.log(e);
+        if (!trackInfoApplied && playerLoaded) {
+            setTrackInfoApplied(true);
+            props.trackInfo?.slices.forEach((slice: number[]) => {
+                props.slice(slice[0], slice[1], props.id);
+            })
+            if (props.trackInfo?.reverb) {
+                props.addEffect('reverb', props.trackInfo.reverb, props.id);
+                setReverbValue(props.trackInfo.reverb);
+            }
+            if (props.trackInfo?.distortion) {
+                props.addEffect('distortion', props.trackInfo.distortion, props.id);
+                setDistortionValue(props.trackInfo.distortion);
+            }
+            if (props.trackInfo?.tremolo) {
+                props.addEffect('tremolo', props.trackInfo.tremolo, props.id);
+                setTremoloValue(props.trackInfo.tremolo);
+            } 
         }
-    }, [props.tracksLength, props.player]);
+    }, [props, playerLoaded, trackInfoApplied, reverbValue, tremoloValue, distortionValue]);
+
+    // useEffect(() => {
+    //     try {
+    //       props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});  
+    //     } catch (e) {
+    //         console.log(e);
+    //     }
+    // }, [props.tracksLength, props.player]);
 
     const startRecording = () => {
         const recorder = props.recorder?.get();
@@ -151,7 +175,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     }
 
     const sliceTrack = () => {
-        props.slice(sliceFrom, sliceTo, 'recorded', props.id);
+        props.slice(sliceFrom, sliceTo, props.id);
         setSlice(false);
         setSliceFrom(0);
         setSliceTo(0);
@@ -212,7 +236,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         value={reverbValue} 
                         onChange={(event: object, value: number | number[]) => setReverbValue(value as number)}
                         onChangeCommitted={(event: object, value: number | number[]) =>{ 
-                            props.addEffect('reverb', value as number, 'recorded', props.id);
+                            props.addEffect('reverb', value as number, props.id);
                         }}
                         min={0}
                         max={10}
@@ -228,7 +252,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     value={distortionValue} 
                     onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
                     onChangeCommitted={(event: object, value: number | number[]) => 
-                        props.addEffect('distortion', value as number, 'recorded', props.id)
+                        props.addEffect('distortion', value as number, props.id)
                     }
                     step={0.1}
                     min={0.0}
@@ -245,7 +269,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     value={tremoloValue} 
                     onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
                     onChangeCommitted={(event: object, value: number | number[]) => {
-                        props.addEffect('tremolo', value as number, 'recorded', props.id);
+                        props.addEffect('tremolo', value as number, props.id);
                     }}
                     min={0}
                     max={10}
@@ -278,9 +302,9 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     open={Boolean(anchorEl)}
                     onClose={handleClose}
                 >
-                    <MenuItem onClick={() => props.addEffect('reverb', reverbValue, 'recorded', props.id)}>Reverb</MenuItem>
-                    <MenuItem onClick={() => props.addEffect('distortion', distortionValue, 'recorded', props.id)}>Distortion</MenuItem>
-                    <MenuItem onClick={() => props.addEffect('tremolo', tremoloValue, 'recorded', props.id)}>Tremolo</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('reverb', reverbValue, props.id)}>Reverb</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('distortion', distortionValue, props.id)}>Distortion</MenuItem>
+                    <MenuItem onClick={() => props.addEffect('tremolo', tremoloValue, props.id)}>Tremolo</MenuItem>
                 </Menu>
             </Grid>
             <Grid item xs={10} ref={zoomRef}>

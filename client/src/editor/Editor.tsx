@@ -10,8 +10,9 @@ import RecordedTrack from "./RecordedTrack";
 import {SynthTrack, chordToNotes} from './SynthTrack';
 import UploadedTrack from './UploadedTrack';
 import * as utils from 'audio-buffer-utils';
-import {ChordData, STData, RTData, UTData, ProjectJson} from './Types';
+import {ChordData, STData, AudioTrackData, ProjectUrls, ProjectData, TrackInfo} from './Types';
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 
 const useStyles = makeStyles({
   root: {
@@ -42,9 +43,8 @@ type Props = {
 }
 
 const Editor: React.FC<Props> = (props) => {
-  const [recordedTracks, setRecordedTracks] = useState<RTData[]>([]);
-  const [synthTracks, setSynthTracks] = useState<STData[]>([]);
-  const [uploadedTracks, setUploadedTracks] = useState<UTData[]>([]);
+  const [audioTracks, setAudioTracks] = useState<Map<string, AudioTrackData>>(new Map());
+  const [synthTracks, setSynthTracks] = useState<Map<string, STData>>(new Map());
   const [longestTrack, setLongestTrack] = useState<number>(0);
   const [recorder, setRecorder] = useState<Recorder>();
   const [userMic, setUserMic] = useState<UserMedia>();
@@ -65,8 +65,9 @@ const Editor: React.FC<Props> = (props) => {
     setLongestTrack(value);
   }
 
-  const addRecordedTrack = () => {
-    const track: RTData = {
+  const addAudioTrack = (type: string) => {
+    const track: AudioTrackData = {
+      type: type,
       player: new PeaksPlayer(),
       url: undefined,
       effects: {
@@ -84,8 +85,10 @@ const Editor: React.FC<Props> = (props) => {
         }
       },
       file: undefined,
+      trackInfo: undefined,
+      slices: [],
     }
-    setRecordedTracks([...recordedTracks, track]);
+    setAudioTracks((new Map(audioTracks)).set(uuidv4(), track));
   }
 
   const addSynthTrack = () => {
@@ -95,29 +98,7 @@ const Editor: React.FC<Props> = (props) => {
       activeChords: new Map(),
       length: 0,
     };
-    setSynthTracks([...synthTracks, newTrack]);
-  }
-
-  const addUploadedTrack = () => {
-    const track: UTData = {
-      player: new PeaksPlayer(),
-      effects: {
-        reverb: {
-          on: false,
-          node: undefined,
-        },
-        distortion: {
-          on: false,
-          node: undefined,
-        },
-        tremolo: {
-          on: false,
-          node: undefined,
-        }
-      },
-      file: undefined,
-    }
-    setUploadedTracks([...uploadedTracks, track]);
+    setSynthTracks((new Map(synthTracks)).set(uuidv4(), newTrack));
   }
   
   const play = () => {
@@ -136,145 +117,142 @@ const Editor: React.FC<Props> = (props) => {
     Tone.Transport.seconds = 0;
   }
 
-  const setSTChordsOrder = (newOrder: number[], idx: number) => {
-    const copy = [...synthTracks];
-    copy[idx].chordsOrder = newOrder;
-    setSynthTracks(copy);
-  }
-
-  const setSTActiveChords = (newActiveChords: Map<number,ChordData>, idx: number) => {
-    const copy = [...synthTracks];
-    copy[idx].activeChords = newActiveChords;
-    setSynthTracks(copy);
-  }
-
-  const setSTSynth = (newSynth: Tone.PolySynth, idx: number) => {
-    const copy = [...synthTracks];
-    copy[idx].synth = newSynth;
-    setSynthTracks(copy);
-  }
-
-  const setUTFile = (file: Blob, idx: number) => {
-    const copy = [...uploadedTracks];
-    copy[idx].file = file;
-    setUploadedTracks(copy);
-  }
-
-  const setRTFile = (file: Blob, idx: number) => {
-    const copy = [...recordedTracks];
-    copy[idx].file = file;
-    setRecordedTracks(copy);
-  }
-
-  const connectEffect = (effect: Tone.ToneAudioNode, trackType: string, id: number) => {
-    let player;
-    if (trackType === 'recorded') {
-      player = recordedTracks[id].player;
-    } else if (trackType === 'uploaded') {
-      player = uploadedTracks[id].player;
+  const setSTChordsOrder = (newOrder: number[], id: string) => {
+    let track = synthTracks.get(id);
+    if (!track) {
+      console.log('setSTChordsOrder: track id not found');
+      return;
     }
-    if (!player) {
-        console.log('player undefined');
+    track.chordsOrder = newOrder;
+    setSynthTracks((new Map(synthTracks)).set(id, track));
+  }
+
+  const setSTActiveChords = (newActiveChords: Map<number,ChordData>, id: string) => {
+    let track = synthTracks.get(id);
+    if (!track) {
+      console.log('setSTChordsOrder: track id not found');
+      return;
+    }
+    track.activeChords = newActiveChords;
+    setSynthTracks((new Map(synthTracks)).set(id, track));
+  }
+
+  const setSTSynth = (newSynth: Tone.PolySynth, id: string) => {
+    let track = synthTracks.get(id);
+    if (!track) {
+      console.log('setSTChordsOrder: track id not found');
+      return;
+    }
+    track.synth = newSynth;
+    setSynthTracks((new Map(synthTracks)).set(id, track));
+  }
+
+  const setAudioTrackFile = (file: Blob, id: string) => {
+    let track = audioTracks.get(id);
+    if (!track) {
+      console.log('setAudioTrackFile: track id not found');
+      return;
+    }
+    track.file = file;
+    setAudioTracks((new Map(audioTracks)).set(id, track));
+  }
+
+  const connectEffect = (effect: Tone.ToneAudioNode, id: string) => {
+    let track = audioTracks.get(id);
+    if (!track) {
+        console.log('connectEffect: track id not found');
         return;
     }
     try {
-      player.connect(effect);
+      track.player.connect(effect);
     } catch (e) {
       console.log("in connectEffect: " + e);
     }
   }
 
-  const disconnectEffect = (effect: Tone.ToneAudioNode, trackType: string, id: number) => {
-    let player;
-    if (trackType === 'recorded') {
-      player = recordedTracks[id].player;
-    } else if (trackType === 'uploaded') {
-      player = uploadedTracks[id].player;
-    }
-    if (!player) {
-        console.log('player undefined');
+  const disconnectEffect = (effect: Tone.ToneAudioNode, id: string) => {
+    let track = audioTracks.get(id);
+    if (!track) {
+        console.log('disconnectEffect: track id not found');
         return;
     }
     try {
-      player.disconnect(effect);
+      track.player.disconnect(effect);
     } catch (e) {
       console.log('in disconnectEffect: ' + e);
     }
   }
 
-  const addEffect = (effect: string, value: number, type: string, id: number) => {
+  const addEffect = (effect: string, value: number, id: string) => {
     let toConnect, toDisconnect: Tone.ToneAudioNode | undefined;
-    let trackData, copy;
-    if (type === 'recorded') {
-      trackData = recordedTracks[id];
-      copy = [...recordedTracks];
-    } else if (type === 'uploaded'){
-      trackData = uploadedTracks[id];
-      copy = [...uploadedTracks];
-    } else {
-      console.log('wrong type sent to addEffect');
+    let trackData = audioTracks.get(id);
+    if (!trackData) {
+      console.log('addEffect: track id not found');
       return;
     }
     if (effect === 'reverb') {
       if (!trackData.effects.reverb.on) {
-        copy[id].effects.reverb.on = true;
+        trackData.effects.reverb.on = true;
       }
       if (value === 0) {
           if (trackData.effects.reverb.node) {
-              disconnectEffect(trackData.effects.reverb.node, type, id);
+              disconnectEffect(trackData.effects.reverb.node, id);
           }
-          type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy);
+          setAudioTracks((new Map(audioTracks)).set(id, trackData));
           return;
       }
+      trackData.effects.reverb.level = value;
       toConnect = Effects.getReverb(value);
       toDisconnect = trackData.effects.reverb.node;
-      copy[id].effects.reverb.node = toConnect;
+      trackData.effects.reverb.node = toConnect;
       console.log(toDisconnect);
     } else if (effect === 'distortion') {
       if (!trackData.effects.distortion.on) {
-        copy[id].effects.distortion.on = true;
+        trackData.effects.distortion.on = true;
       }
       if (value === 0) {
           if (trackData.effects.distortion.node) {
-              disconnectEffect(trackData.effects.distortion.node, type, id);
+              disconnectEffect(trackData.effects.distortion.node, id);
           }
-          type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy)
+          setAudioTracks((new Map(audioTracks)).set(id, trackData));
           return;
       }
+      trackData.effects.distortion.level = value;
       toConnect = Effects.getDistortion(value);
       toDisconnect = trackData.effects.distortion.node;
-      copy[id].effects.distortion.node = toConnect;
+      trackData.effects.distortion.node = toConnect;
     } else if (effect === 'tremolo') {
       if (!trackData.effects.tremolo.on) {
-        copy[id].effects.tremolo.on = true;
+        trackData.effects.tremolo.on = true;
       }
       if (value === 0) {
           if (trackData.effects.tremolo.node) {
-              disconnectEffect(trackData.effects.tremolo.node, type, id);
+              disconnectEffect(trackData.effects.tremolo.node, id);
           }
-          type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy)
+          setAudioTracks((new Map(audioTracks)).set(id, trackData));
           return;
       }
+      trackData.effects.tremolo.level = value;
       toConnect = Effects.getTremolo(value);
       toDisconnect = trackData.effects.tremolo.node;
-      copy[id].effects.tremolo.node = toConnect;
+      trackData.effects.tremolo.node = toConnect;
     }
     console.log('disconnecting: ' + toDisconnect + ', connecting: ' + toConnect);
-    if (toDisconnect !== undefined) disconnectEffect(toDisconnect, type, id);
-    if (toConnect !== undefined) connectEffect(toConnect, type, id);
-    if (copy) type === 'recorded' ? setRecordedTracks(copy as RTData[]) : setUploadedTracks(copy);
+    if (toDisconnect !== undefined) disconnectEffect(toDisconnect, id);
+    if (toConnect !== undefined) connectEffect(toConnect, id);
+    setAudioTracks((new Map(audioTracks)).set(id, trackData));
 }
 
-  const sliceTrack = (sliceFrom: number, sliceTo: number, trackType: string, id: number) => {
-    if (sliceFrom === sliceTo) {
+  const sliceTrack = (sliceFrom: number, sliceTo: number, id: string) => {
+    if (sliceFrom >= sliceTo) {
       return;
     }
-    let player;
-    if (trackType === 'recorded') {
-      player = recordedTracks[id].player;
-    } else if (trackType === 'uploaded') {
-      player = uploadedTracks[id].player;
+    let track = audioTracks.get(id);
+    if (!track) {
+      console.log('sliceTrack: id not found');
+      return;
     }
+    const {player, slices} = track; 
     const buffer1 = player?.player?.getBuffer()?.slice(0, sliceFrom);
     const buffer2 = player?.player?.getBuffer()?.slice(sliceTo);
     if (!(buffer1 && buffer2)) {
@@ -285,29 +263,27 @@ const Editor: React.FC<Props> = (props) => {
     utils.concat(buffer1.get(), buffer2.get());
     player?.player?.getBuffer().set(newBuffer);
     player?.setPeaksBuffer(newBuffer);
+    slices.push([sliceFrom, sliceTo]);
   }
 
-  const deleteTrack = (idx : number, type: string) => {
+  const deleteTrack = (id : string, type: string) => {
     if (type === 'synth') {
-      const copy = [...synthTracks];
-      copy.splice(idx, 1);
-      setSynthTracks(copy);
-    } else if (type === 'recorded') {
-      const copy = [...recordedTracks];
-      copy.splice(idx, 1);
-      setRecordedTracks(copy);
-    } else if (type === 'uploaded') {
-      const copy = [...uploadedTracks];
-      copy.splice(idx, 1);
-      setUploadedTracks(copy);
+      let map = new Map(synthTracks);
+      map.delete(id);
+      setSynthTracks(map);
+    } else {
+      let map = new Map(audioTracks);
+      map.delete(id);
+      setAudioTracks(map);
     }
   }
 
-  const createFromJson = async (projectJson: ProjectJson) => {
-    const rTracks: RTData[] = projectJson.recorded.map((url: string, index: number) => {
-      return  {
+  const setTracksInMap = (tracksData: {url: string; id: string;}[], map: Map<string, AudioTrackData>, type: string ) => {
+    tracksData.forEach((trackData) => {
+      let track: AudioTrackData = {
+        type: type,
         player: new PeaksPlayer(),
-        url: url,
+        url: trackData.url,
         effects: {
           reverb: {
             on: false,
@@ -323,63 +299,55 @@ const Editor: React.FC<Props> = (props) => {
           }
         },
         file: undefined,
+        trackInfo: undefined,
+        slices: [],
       }
+      map.set(trackData.id, track);
     });
-    const uTracks: UTData[] = projectJson.uploaded.map((url: string, index: number) => {
-      return {
-        player: new PeaksPlayer(),
-        effects: {
-          reverb: {
-            on: false,
-            node: undefined,
-          },
-          distortion: {
-            on: false,
-            node: undefined,
-          },
-          tremolo: {
-            on: false,
-            node: undefined,
-          }
-        },
-        url: url,
-        file: undefined,
-      }
-    });
-    if (projectJson.json.length) {
-      const synthData = await axios.get(projectJson.json[0]);
-      console.log(synthData);
-      const sTracks: STData[] = synthData.data.map((data: any, index: number) => {
+  }
+
+  const createFromJson = async (projectUrls: ProjectUrls) => {
+    let audioTracksMap = new Map();
+    setTracksInMap(projectUrls.recorded, audioTracksMap, 'recorded');
+    setTracksInMap(projectUrls.uploaded, audioTracksMap, 'uploaded');
+    if (projectUrls.json.length) {
+      const projectJson = (await axios.get(projectUrls.json[0])).data;
+      console.log(projectJson);
+      let synthTracksMap = new Map();
+      projectJson.synthTracks?.forEach((trackData: any) => {
+        // console.log(data);
         const newMap = new Map();
         const newSynth = new Tone.PolySynth().toDestination();
         newSynth.sync();
         let length = 0;
-        data.activeChords?.forEach((chord: any) => {
-          chord = chord[1];
+        trackData.data.activeChords?.forEach((chordData: any) => {
+          let chord = chordData.data;
           length += chord.duration;
-          newMap.set(chord.id, chord);
+          newMap.set(chordData.id, chord);
           const notes = chordToNotes.get(chord.name);
           if (!notes) return;
           newSynth.triggerAttackRelease(notes, chord.durationStr, chord.startTime);
         })
-        return {
+        let track: STData = {
           activeChords: newMap,
-          chordsOrder: data.chordsOrder,
+          chordsOrder: trackData.data.chordsOrder,
           synth: newSynth,
           length: length,
-          key: index,
         }
+        synthTracksMap.set(trackData.id, track);
       });
-      setSynthTracks(sTracks);
+      projectJson.audioTracks.forEach((trackInfo: any) => {
+        let track: AudioTrackData = audioTracksMap.get(trackInfo.trackId);
+        if (!track) return;
+        track.trackInfo = trackInfo;
+      })
+      setSynthTracks(synthTracksMap);
     }
-    // setLongestTrack(json.length);
-    setRecordedTracks(rTracks);
-    setUploadedTracks(uTracks);
+    setAudioTracks(audioTracksMap);
   }
 
   const saveProject = async () => {
-    sendFilesOf(recordedTracks, 'recorded');
-    sendFilesOf(uploadedTracks, 'uploaded');
+    sendAudioTracks();
     const options = {
       withCredentials :true,
       headers: {
@@ -388,43 +356,62 @@ const Editor: React.FC<Props> = (props) => {
     };
     const jsonType = 'application/json';
     const presignedData = await axios.get(
-      'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=synth.json&content=" + jsonType,
+      'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=project.json&content=" + jsonType,
       options
     );
     console.log(presignedData);
     function replacer(key: any, value: any) {
-        if (key === 'synth') return undefined;
-        else if (value instanceof Map) {
-          return Array.from(value.entries());
-        } else return value;
+      if (key === 'synth') return undefined;
+      else if (value instanceof Map) {
+        return Array.from(value.entries()).map(([id, data]) => {
+          return {
+            id: id,
+            data: data,
+          };
+        })
+      } else return value;
     }
-    axios.put(presignedData.data, JSON.stringify(synthTracks, replacer), {headers: {
+    const tracksInfo: TrackInfo[] = Array.from(audioTracks.entries()).map(([id, data]) => {
+      return {
+        trackId: id,
+        trackType: data.type,
+        reverb: data.effects.reverb.level,
+        distortion: data.effects.distortion.level,
+        tremolo: data.effects.tremolo.level,
+        slices: data.slices.map((slice) => [Number(slice[0]), Number(slice[1])]),
+      }
+    });
+    let json = {
+      synthTracks: synthTracks,
+      audioTracks: tracksInfo,
+    }
+    axios.put(presignedData.data, JSON.stringify(json, replacer), {headers: {
       'Content-Type': jsonType
     }})
-    console.log(JSON.stringify(synthTracks, replacer));
+    .then(function (response) {
+      console.log(response);
+    }).catch(function (error) {
+      console.log(error);
+    });
+    console.log(JSON.stringify(json, replacer));
   }
 
-  const sendFilesOf = (tracks: Array<RTData | UTData>, type: string) => {
+  const sendAudioTracks = () => {
     const options = {
       withCredentials :true,
       headers: {
       'Access-Control-Allow-Credentials':'true'
       }
     };
-    let contentType = type === 'recorded' ? 'audio/webm;codecs=opus' : 'audio/mpeg';
-    let postfix = type === 'recorded' ? '.webm' : '.mp3';
-    tracks.forEach(async (track, index) => {
+    audioTracks.forEach(async (value, key) => {
+      let contentType = value.type === 'recorded' ? 'audio/webm;codecs=opus' : 'audio/mpeg';
+      let postfix = value.type === 'recorded' ? '.webm' : '.mp3';
       const presignedData = await axios.get(
-        'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=" + type + "_" + index + postfix + "&content=" + contentType,
-        options
+        'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=" + value.type + "_" + key + postfix + 
+        "&content=" + contentType, options
       );
       console.log(presignedData);
-      let buffer = track.player.player?.getBuffer().get();
-      if (!buffer) {
-        console.log('buffer array is' + buffer + 'in saveProject');
-        return;
-      }
-      let blob = track.file;
+      let blob = value.file;
       blob && axios.put(presignedData.data, blob, {headers: {
         'Content-Type': blob.type
       }})
@@ -443,7 +430,7 @@ const Editor: React.FC<Props> = (props) => {
       'Access-Control-Allow-Credentials':'true'
       }
     };
-    const projectData = await axios.get('http://127.0.0.1:8000/presigned_get/?project_id=c99ae5aa-b6ca-4e28-8967-5d557edb0316', options);
+    const projectData = await axios.get('http://127.0.0.1:8000/presigned_get/?project_id=7b813b84-323b-45c1-b970-62025a2fdd4e', options);
     console.log(projectData);
     createFromJson(JSON.parse(projectData.data));
   }
@@ -464,18 +451,24 @@ const Editor: React.FC<Props> = (props) => {
                   <StopIcon/>
               </Button> 
           </ButtonGroup>
-          <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addRecordedTrack}>Add recording track</Button>
-          <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addSynthTrack}>Add synth track</Button>
-          <Button className={classes.button} color='secondary' variant='contained' size='small' onClick={addUploadedTrack}>Add track for uploading</Button>
-          <Button className={classes.button} color='primary' variant='contained' size='small' onClick={saveProject}>Save Project</Button>
-          <Button className={classes.button} color='primary' variant='contained' size='small' onClick={getProject}>Get Project</Button>
+          <Button className={classes.button} color='secondary' variant='contained' size='small' 
+            onClick={() => addAudioTrack('recorded')}>Add recording track</Button>
+          <Button className={classes.button} color='secondary' variant='contained' size='small' 
+            onClick={addSynthTrack}>Add synth track</Button>
+          <Button className={classes.button} color='secondary' variant='contained' size='small' 
+            onClick={() => addAudioTrack('uploaded')}>Add track for uploading</Button>
+          <Button className={classes.button} color='primary' variant='contained' size='small' 
+            onClick={saveProject}>Save Project</Button>
+          <Button className={classes.button} color='primary' variant='contained' size='small' 
+            onClick={getProject}>Get Project</Button>
         </Box>
       </div>
-      {(recordedTracks.length !==0 || synthTracks.length !== 0 || uploadedTracks.length !== 0) && 
+      {(audioTracks.size !==0 || synthTracks.size !== 0) && 
         <Box className={classes.tracksContainer}>
-          {recordedTracks.map((data, index) => {
-            return <RecordedTrack
-              id={index} 
+          {Array.from(audioTracks).map(([id, data]) => {
+            let track = data.type === 'recorded' ?
+            <RecordedTrack
+              id={id} 
               recorder={recorder}
               userMic={userMic}
               effects={data.effects}
@@ -486,12 +479,27 @@ const Editor: React.FC<Props> = (props) => {
               deleteTrack={deleteTrack}
               slice={sliceTrack}
               addEffect={addEffect}
-              setFile={setRTFile}
+              setFile={setAudioTrackFile}
+              trackInfo={data.trackInfo}
+              key={id}
+            /> :
+            <UploadedTrack
+              player={data.player}
+              effects={data.effects}
+              url={data.url ? data.url : undefined}
+              id={id}
+              deleteTrack={deleteTrack}
+              slice={sliceTrack}
+              addEffect={addEffect}
+              setFile={setAudioTrackFile}
+              trackInfo={data.trackInfo}
+              key={id}
             />;
+            return track;
           })}
-          {synthTracks.map((data, index) => {
+          {Array.from(synthTracks).map(([id, data]) => {
             return <SynthTrack
-              id={index}
+              id={id}
               initialLength={data.length}
               setTracksLength={setLongestTrack}
               activeChords={data.activeChords}
@@ -501,18 +509,7 @@ const Editor: React.FC<Props> = (props) => {
               setChordsOrder={setSTChordsOrder}
               setSynth={setSTSynth}
               deleteTrack={deleteTrack}
-            />
-          })}
-          {uploadedTracks.map((data, index) => {
-            return <UploadedTrack
-              player={data.player}
-              effects={data.effects}
-              url={data.url ? data.url : undefined}
-              id={index}
-              deleteTrack={deleteTrack}
-              slice={sliceTrack}
-              addEffect={addEffect}
-              setFile={setUTFile}
+              key={id}
             />
           })}
         </Box>
