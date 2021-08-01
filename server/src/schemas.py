@@ -31,8 +31,7 @@ class Item(ItemBase):
 
 class UserInfoBase(BaseModel):
     email: str
-    full_name: Optional[str] = None
-    first_name: Optional[str] = None
+    full_name: str
     disabled: Optional[bool] = False
 
 
@@ -49,7 +48,7 @@ class ProjectDataOut(BaseModel):
 class Project(BaseModel):
     project_name: str
     email: str
-    description: Optional[str] = None
+    description: str
 
     class Config:
         orm_mode = True
@@ -62,9 +61,11 @@ class ProjectEdit(BaseModel):
 
     class Config:
         orm_mode = True
+
 class ProjectOut(BaseModel):
     project_name: str
     email: str
+    description: str
     uuid: str
 
     class Config:

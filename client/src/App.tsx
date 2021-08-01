@@ -5,7 +5,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
-import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse} from '@material-ui/core';
+import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse, makeStyles} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import SearchBar from "material-ui-search-bar";
 import InboxIcon from '@material-ui/icons/MoveToInbox';
@@ -19,7 +19,11 @@ import qs from 'qs-stringify';
 import { Recorder, startTone, UserMedia } from './ToneComponents';
 import { stringify } from 'node:querystring';
 import queryStringify from 'qs-stringify';
-
+const useStyles = makeStyles({
+  popover: {
+      padding: '35px'
+  }
+});
 
 enum MenuItems {
   Main = "Main Feed",
@@ -28,6 +32,8 @@ enum MenuItems {
 }
 
 const App = () => {
+
+  const classes = useStyles();  
   const {Main, Profile, Create} = MenuItems;
   const [selectedPage, setSelectedPage] = useState<string>(Main);
   const [searchText, setSearchText] = useState<string>("");
@@ -39,7 +45,9 @@ const App = () => {
   const [loginpassword, setLoginPassword] = useState<string>("");
   const [signupemail, setSignupEmail] = useState<string>("");
   const [signuppassword, setSignupPassword] = useState<string>("");
+  const [signupname, setSignupName] = useState<string>("")
   const [projectname, setProjectName] = useState<string>("");
+  const [projectdescription, setProjectDescription] = useState<string>("");
   const [collapseOpen, setCollapseOpen] = useState<boolean>(false);
   const [currProjectId, setCurrProjectId] = useState<string>("");
   const loginRef = useRef(null);
@@ -110,11 +118,17 @@ const App = () => {
   
     setSignupEmail(e.target.value)
   }
+  const handleChangeSignupName = (e: any)=>{
+    setSignupName(e.target.value)
+  }
   const handleChangeSignupPassword = (e: any)=>{
     setSignupPassword(e.target.value)
   }
   const handleProjectNameChange = (e: any)=>{
     setProjectName(e.target.value)
+  }
+  const handleProjectDescriptionChange = (e: any)=>{
+    setProjectDescription(e.target.value)
   }
   const checkMenuOption = (text: string) => {
     if (text === Create){
@@ -201,7 +215,7 @@ const App = () => {
 
   
   const signupThenSet = () => {
-    const data = {email: signupemail, hashed_password: signuppassword};
+    const data = {email: signupemail, hashed_password: signuppassword, full_name: signupname};
     fetch('http://127.0.0.1:8000/users/', {
       method: 'POST',
       headers: {
@@ -234,7 +248,7 @@ const App = () => {
       console.log('email undefined in create project');
       return;
     }
-    const data = {project_name: projectname, email: email}
+    const data = {project_name: projectname, email: email, description: projectdescription}
     fetch('http://127.0.0.1:8000/create_project/', {
       method: 'POST',
       headers: {
@@ -314,21 +328,24 @@ const App = () => {
                     onClose = {signupPopover(false)}
                     >
                         <Box display="flex" flexDirection="column">
-                        <TextField label=" e-mail" value={signupemail} onChange = {handleChangeSignupEmail}/>
-                        <TextField label=" password" value={signuppassword} onChange = {handleChangeSignupPassword}/>
+                        <TextField label="Full Name" value={signupname} onChange = {handleChangeSignupName}/>  
+                        <TextField label="E-mail" value={signupemail} onChange = {handleChangeSignupEmail}/>
+                        <TextField label="Password" value={signuppassword} onChange = {handleChangeSignupPassword}/>
                         <Button onClick={signupThenSet}>Create</Button>
                     </Box> 
               </Popover> 
               <Popover
                 anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
+                    vertical: 'center',
+                    horizontal: 'center',
                     }}
+                    classes = {{paper: classes.popover}}
                     anchorEl ={createRef.current}
                     open = {createProject}
                     onClose = {createPopover(false)}>
                       <Box display="flex" flexDirection="column">
-                        <TextField label=" Project name:" value={projectname} onChange = {handleProjectNameChange}/>
+                        <TextField label="Project Name:" value={projectname} onChange = {handleProjectNameChange}/>
+                        <TextField label="Description:" value={projectdescription} onChange = {handleProjectDescriptionChange}/>
                         <Button onClick={createProjectThenSet}>Apply</Button>
                     </Box>  
               </Popover>

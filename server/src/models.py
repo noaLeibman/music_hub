@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, desc
 from sqlalchemy.orm import relationship
 import uuid
 from database import Base, engine
@@ -40,6 +40,7 @@ class Project(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     email = Column(String, index=True)
     project_name = Column(String, unique=True)
+    author_name = Column(String)
     last_edited = Column(String, default=datetime.utcnow)
     description = Column(String)
     users = relationship("UserInfo", secondary="projects_users", backref="projects_users", lazy="dynamic")
@@ -57,6 +58,9 @@ class Project(Base):
     def users_uuid(self) -> t.List[str]:
         return [user.uuid for user in self.users]
 
+def return_projects(Base):
+    projects = Project(Base).query.order_by(desc(Project.edited_at)).limit(10).all
+    return projects
 
 class ProjectsUsers(Base):
     __tablename__ = "projects_users"
