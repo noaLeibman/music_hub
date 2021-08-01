@@ -2,6 +2,8 @@ import json
 
 import bcrypt
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from typing import List
 
 import models
 import schemas
@@ -15,8 +17,13 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.UserInfo).filter(models.UserInfo.email == email).first()
 
 
-def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.UserInfo).offset(skip).limit(limit).all()
+def get_all_projects_by_date(db: Session, limit: int = 10):
+    projects = db.query(models.Project).order_by(desc(models.Project.last_edited)).limit(10).all()
+    uuid_list = []
+    for project in projects:
+        uuid_list.append(project.uuid)
+
+    return uuid_list
 
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -40,32 +47,34 @@ def get_project_by_id(db: Session, id: str):
     return db.query(models.Project).filter(models.Project.uuid == id).first()
 
 
-def get_projects_info(db: Session, user_mail : str):
-    user = get_user_by_email(db, user_mail)
-    author_name = user.full_name
-    projects_list = user.projects_list_uuid
-
+def get_projects_metadata(db:Session, uuid_list : List[str]):
     all_projects_dict = dict()
 
-    if len(projects_list) > 0:
-        for count, project in enumerate(projects_list):
+    if len(uuid_list) > 0:
+        for count, project in enumerate(uuid_list):
             project_item = get_project_by_id(db, project)
             project_dict = dict()
+            project_dict["project_name"] = project_item.project_name
             project_dict["project_id"] = project_item.uuid
             project_dict["description"] = project_item.description
-            project_dict["author"] = author_name
+            project_dict["author"] = project_item.author_name
             all_projects_dict[count] = project_dict
-
 
     return all_projects_dict
 
+def get_user_projects_uuid(db: Session, user_mail: str):
+    user = get_user_by_email(db, user_mail)
+    projects_list = user.projects_list_uuid
+    return projects_list
+
 
 def create_project_2(db: Session, project: schemas.Project):
+    user_to_add = get_user_by_email(db, project.email)
+    author_name = user_to_add.full_name
     db_project_to_add = models.Project(
-        email=project.email, project_name=project.project_name
+        email=project.email, project_name=project.project_name, author_name=author_name, description = project.description
     )
 
-    user_to_add = get_user_by_email(db, project.email)
     db_project_to_add.sign_up(user_to_add)
     db.add(db_project_to_add)
     db.commit()
@@ -79,15 +88,3 @@ def project_change_edit(db: Session, project: models.Project):
     project.edited_at()
     db.commit()
     db.refresh(project)
-
-
-def get_items(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Item).offset(skip).limit(limit).all()
-
-
-def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
-    db_item = models.Item(**item.dict(), owner_id=user_id)
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    return db_item

@@ -49,7 +49,7 @@ class ProjectDataOut(BaseModel):
 class Project(BaseModel):
     project_name: str
     email: str
-    description: Optional[str] = None
+    description: str
 
     class Config:
         orm_mode = True
@@ -62,9 +62,11 @@ class ProjectEdit(BaseModel):
 
     class Config:
         orm_mode = True
+
 class ProjectOut(BaseModel):
     project_name: str
     email: str
+    description: str
     uuid: str
 
     class Config:

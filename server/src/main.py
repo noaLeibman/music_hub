@@ -18,6 +18,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 import crud
+import models
 import schemas
 from database import SessionLocal
 
@@ -167,9 +168,33 @@ async def read_users_me(
     return current_user
 
 
+
+@app.get("/projects_recent")
+async def get_project(db:Session = Depends(get_db)):
+    uuid_list = crud.get_all_projects_by_date(db, 10)
+    projects_dict = crud.get_projects_metadata(db, uuid_list)
+    lambda_client = boto3.client('lambda', 'eu-central-1')
+    for project in projects_dict.items():
+        project_id = project[1]["project_id"]
+
+        lambda_payload = json.dumps({"project_id": project_id})
+
+        response = lambda_client.invoke(FunctionName='getProjectPreviewImage',
+                                        InvocationType='RequestResponse',
+                                        Payload=lambda_payload)
+
+        data = response['Payload'].read()
+        data = json.loads(data)
+        project[1]["image_url"] = data
+    dict_json = json.dumps(projects_dict)
+    return dict_json
+
 @app.get("/project/{email}")
 async def get_project(mail: str, db: Session = Depends(get_db)):
-    projects_dict = crud.get_projects_info(db, mail)
+    uuid_list = crud.get_user_projects_uuid(db, mail)
+    projects_dict = crud.get_projects_metadata(db, uuid_list)
+
+
     lambda_client = boto3.client('lambda', 'eu-central-1')
     for project in projects_dict.items():
         project_id = project[1]["project_id"]
@@ -276,6 +301,12 @@ async def get_project_id(project_id: str):
     data_dict = json.loads(data)
     return data_dict
 
+@app.get("/tryme")
+async def get_projects(db: Session = Depends(get_db)):
+    projects = crud.get_all_projects_by_date(db,10)
+
+
+    print(projects)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
