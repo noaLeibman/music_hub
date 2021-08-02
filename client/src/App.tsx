@@ -19,6 +19,7 @@ import qs from 'qs-stringify';
 import { Recorder, startTone, UserMedia } from './ToneComponents';
 import { stringify } from 'node:querystring';
 import queryStringify from 'qs-stringify';
+import { RestoreOutlined } from '@material-ui/icons';
 const useStyles = makeStyles({
   popover: {
       padding: '35px'
@@ -50,11 +51,37 @@ const App = () => {
   const [projectdescription, setProjectDescription] = useState<string>("");
   const [collapseOpen, setCollapseOpen] = useState<boolean>(false);
   const [currProjectId, setCurrProjectId] = useState<string>("");
+  const [isSet, setIsSet] = useState<boolean>(false)
+  const [userName, setUserName] = useState<string>("")
+  const [isSetAfterCookie, setIsSetAfterCookie] = useState<boolean>(false)
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
   const getMenuList = () => [Main,Profile, Create];
   const searchSite = (text: string) => {};
+
+  useEffect(() => {
+    if (!isSet){
+      getUserNameFromCookie()
+    }
+  }, [isSet, userName])
+
+  const getUserNameFromCookie = () =>{
+      axios.get('http://127.0.0.1:8000/users/me/', 
+      {withCredentials: true}).then(userData=> {          
+        if (userData.status === 200){
+          console.log(userData);
+          setUserName(userData.data.full_name)
+          console.log(userData.data.full_name)
+          setIsSetAfterCookie(true)   
+        }
+      }).catch(e => {
+      console.log(e);
+
+      
+    });
+    setIsSet(true)
+  }
 
   const toggleDrawer = (open: boolean) => (
     event: React.KeyboardEvent | React.MouseEvent,
@@ -153,37 +180,7 @@ const App = () => {
       
     );
   };
-  // const loginThenSet = () => {
-    
-  //   const data = {username: loginemail, password: loginpassword};
-  //   fetch('http://127.0.0.1:8000/token/', {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify(data),
-  //   })
-  //   .then(response => response.json())
-  // .then(data => {
-  //   console.log('Success:', data);
-  // })
-  // .catch((error) => {
-  //   console.error('Error:', error);
-  // });
-  // }
-  // const loginThenSet = async() => {
-  //   const auth = await getAuthorizationCode();
-  //   console.log(auth)
 
-  // }
-  // const getAuthorizationCode = oauth.client(axios.create(), {
-  //   url: 'http://127.0.0.1:8000/token',
-  //   grant_type: 'password',
-  //   username: loginemail,
-  //   password: loginpassword,
-  //   client_id: '',
-  //   client_secret: '',
-  // });
   const loginThenSet = () => {
     const params = queryStringify({
       'grant_type': 'password',
@@ -205,6 +202,9 @@ const App = () => {
     ).then(result => {
       if (result.status === 200) {
         console.log(result);
+        if (!isSetAfterCookie){
+          getUserNameFromCookie()
+        }
       }
     }).catch(e => {
       console.log("Login error");
@@ -271,11 +271,6 @@ const App = () => {
   const tryMe = async () => {
     const res = await axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true});
     console.log(res);
-    // .then(res => {
-    //   const user = res.data;
-    //   console.log(user)
-    //   setSignupEmail(user.email);
-    // })
     return res.data.email;
   }
     return (
@@ -300,16 +295,20 @@ const App = () => {
                 value={searchText}
                 onChange={(newValue) => setSearchText(newValue)}
                 onRequestSearch={() => searchSite(searchText)}
+                style={{marginRight: '70px'}}
               />
               <Button color="inherit" style={{marginLeft: '10px'}} ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
               <Button color="inherit" style={{marginLeft: '10px'}} ref={loginRef} onClick={()=>setLoginButton(!loginButton)}>Login</Button>
-              <Button color="inherit" style={{marginLeft: '10px'}}  onClick={()=>tryMe()}>TRYME</Button>
+              {/* <Button color="inherit" style={{marginLeft: '10px'}}  onClick={()=>tryMe()}>TRYME</Button> */}
+              <Box fontSize={14} style={{marginLeft: '15px'}}>
+                {userName ? 'Welcome back, ' + userName : undefined}
+                </Box>
               <Popover
                     anchorOrigin={{
                     vertical: 'bottom',
                     horizontal: 'left',
                     }}
-                    anchorEl={loginRef.current}
+                    anchorEl={loginRef.current} 
                     open={loginButton}
                     onClose = {loginPopover(false)}>
                     <Box display="flex" flexDirection="column">
@@ -330,7 +329,7 @@ const App = () => {
                         <Box display="flex" flexDirection="column">
                         <TextField label="Full Name" value={signupname} onChange = {handleChangeSignupName}/>  
                         <TextField label="E-mail" value={signupemail} onChange = {handleChangeSignupEmail}/>
-                        <TextField label="Password" value={signuppassword} onChange = {handleChangeSignupPassword}/>
+                        <TextField label="Passsword" value={signuppassword} onChange = {handleChangeSignupPassword}/>
                         <Button onClick={signupThenSet}>Create</Button>
                     </Box> 
               </Popover> 
