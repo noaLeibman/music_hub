@@ -2,7 +2,7 @@ import { Box, Button, ButtonGroup, makeStyles } from '@material-ui/core';
 import { PlayArrow } from '@material-ui/icons';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import * as Tone from 'tone';
 import {Recorder, UserMedia, PeaksPlayer, Effects, startTone} from "../ToneComponents";
 import Metronome from './Metronome';
@@ -10,9 +10,10 @@ import RecordedTrack from "./RecordedTrack";
 import {SynthTrack, chordToNotes} from './SynthTrack';
 import UploadedTrack from './UploadedTrack';
 import * as utils from 'audio-buffer-utils';
-import {ChordData, STData, AudioTrackData, ProjectUrls, ProjectData, TrackInfo} from './Types';
+import {ChordData, STData, AudioTrackData, ProjectUrls, TrackInfo} from './Types';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import editorImg from '../images/editorBack.png';
 
 const useStyles = makeStyles({
   root: {
@@ -33,6 +34,11 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
   },
+  backgraound : {
+    backgroundColor: 'yellow',
+    height: '100%',
+    width: '100%',
+  },
   button: {
     margin: '5px'
   },
@@ -40,6 +46,7 @@ const useStyles = makeStyles({
 
 type Props = {
   projectId: string;
+  newProject: boolean;
 }
 
 const Editor: React.FC<Props> = (props) => {
@@ -48,6 +55,7 @@ const Editor: React.FC<Props> = (props) => {
   const [longestTrack, setLongestTrack] = useState<number>(0);
   const [recorder, setRecorder] = useState<Recorder>();
   const [userMic, setUserMic] = useState<UserMedia>();
+  const [projectRetrieved, setProjectRetrieved] = useState<boolean>(false);
 
   const classes = useStyles();
 
@@ -59,7 +67,31 @@ const Editor: React.FC<Props> = (props) => {
 
   useEffect(() => {
     initState();
-  }, [])
+  }, []);
+
+  const getProject = useCallback(() => {
+    const options = {
+      withCredentials :true,
+      headers: {
+      'Access-Control-Allow-Credentials':'true'
+      }
+    };
+    axios.get('http://127.0.0.1:8000/presigned_get/?project_id=' + props.projectId, options)
+    .then(projectData => {
+      console.log(projectData);
+      createFromJson(JSON.parse(projectData.data));
+    }).catch(error => {
+      console.log(error);
+    });
+  }, [props.projectId]);
+
+  useEffect(() => {
+    if (!props.newProject && !projectRetrieved) {
+      console.log('getting project');
+      setProjectRetrieved(true);
+      getProject();
+    }
+  }, [props.newProject, projectRetrieved, getProject]);
   
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
@@ -423,20 +455,8 @@ const Editor: React.FC<Props> = (props) => {
     })
   }
 
-  const getProject = async () => {
-    const options = {
-      withCredentials :true,
-      headers: {
-      'Access-Control-Allow-Credentials':'true'
-      }
-    };
-    const projectData = await axios.get('http://127.0.0.1:8000/presigned_get/?project_id=7b813b84-323b-45c1-b970-62025a2fdd4e', options);
-    console.log(projectData);
-    createFromJson(JSON.parse(projectData.data));
-  }
-
   return (
-    <Box>
+    <Box className={classes.backgraound}>
       <div style={{width: '120px', float: 'left'}}>
         <Metronome/>
         <Box className={classes.root}>
@@ -459,8 +479,6 @@ const Editor: React.FC<Props> = (props) => {
             onClick={() => addAudioTrack('uploaded')}>Add track for uploading</Button>
           <Button className={classes.button} color='primary' variant='contained' size='small' 
             onClick={saveProject}>Save Project</Button>
-          <Button className={classes.button} color='primary' variant='contained' size='small' 
-            onClick={getProject}>Get Project</Button>
         </Box>
       </div>
       {(audioTracks.size !==0 || synthTracks.size !== 0) && 

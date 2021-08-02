@@ -1,4 +1,4 @@
-import { Button, Card, CardActions, CardContent, IconButton, Typography } from '@material-ui/core';
+import { Button, Card, CardActions, CardContent, CardMedia, IconButton, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import React, { useRef, useState } from 'react';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
@@ -17,14 +17,17 @@ type ProjectProps = {
 
 const useStyles = makeStyles({
     root: {
-        display: 'block',
-        width: '50%',
-        marginLeft: '25%',
-        marginRight: '25%',
-        marginTop: '5%',
-        marginBottom: '5%',
-        backgroundColor: '#e8edea',
+        display: 'flex',
     },
+    // root: {
+    //     display: 'block',
+    //     width: '50%',
+    //     marginLeft: '25%',
+    //     marginRight: '25%',
+    //     marginTop: '5%',
+    //     marginBottom: '5%',
+    //     backgroundColor: '#e8edea',
+    // },
     pos: {
       marginBottom: 12,
     },
@@ -38,6 +41,16 @@ const useStyles = makeStyles({
     cardButton: {
         justifyContent: 'center'
     },
+    details: {
+        display: 'flex',
+        flexDirection: 'column',
+    },  
+    content: {
+        flex: '1 0 auto',
+    },
+    cover: {
+        width: 151,
+    },  
   });
   
 const ProjectCard: React.FC<ProjectProps> = (props) => {
@@ -59,7 +72,31 @@ const ProjectCard: React.FC<ProjectProps> = (props) => {
 
     return (
         <div>
-            <Card className={classes.root} variant="outlined">
+            <Card className={classes.root}>
+            <div className={classes.details}>
+                <CardContent className={classes.content}>
+                <Typography component="h5" variant="h5">
+                    Live From Space
+                </Typography>
+                <Typography variant="subtitle1" color="textSecondary">
+                    Mac Miller
+                </Typography>
+                </CardContent>
+                <div className={classes.controls}>
+                    <IconButton aria-label="play/pause">
+                        <PlayArrowIcon className={classes.playIcon} />
+                    </IconButton>
+                </div>
+            </div>
+            <CardMedia
+                className={classes.cover}
+                image="/static/images/cards/live-from-space.jpg"
+                title="Live from space album cover"
+            />
+        </Card>
+
+
+            {/* <Card className={classes.root} variant="outlined">
                 <CardContent>
                     <Typography variant="h5" component="h2">
                     {props.project_name}
@@ -73,20 +110,14 @@ const ProjectCard: React.FC<ProjectProps> = (props) => {
                 </CardContent>
                 <div ref={waveformRef}/>
                 <div className={classes.controls}>
-                    {/* <IconButton aria-label="previous">
-                        <SkipPreviousIcon />
-                    </IconButton> */}
                     <IconButton aria-label="play/pause" onClick={onClickPlay}>
                        { playing ? <PauseIcon className={classes.playIcon} />: <PlayArrowIcon className={classes.playIcon} />}
                     </IconButton>
-                    {/* <IconButton aria-label="next">
-                    <SkipNextIcon />
-                    </IconButton> */}
                 </div>
                 <CardActions className={classes.cardButton} >
                     <Button size="small" variant="contained" color="primary">Learn More</Button>
                 </CardActions>
-            </Card>
+            </Card> */}
         </div>
     );
 };
