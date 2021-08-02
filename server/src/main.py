@@ -69,6 +69,7 @@ def authenticate_user(email: str, password: str, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email)
     if not db_user:
         return False
+    encoded_pw = password.encode("utf8")
     password_check = bcrypt.checkpw(password.encode("utf8"), db_user.hashed_password)
     if password_check is False:
         return False

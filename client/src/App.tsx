@@ -16,6 +16,8 @@ import Editor from './editor/Editor';
 import axios from 'axios';
 import queryStringify from 'qs-stringify';
 import ProfilePage from './ProfilePage';
+import { createFalse } from 'typescript';
+import { FormatColorReset } from '@material-ui/icons';
 const useStyles = makeStyles({
   popover: {
       padding: '35px'
@@ -44,6 +46,7 @@ const App = () => {
   const [signuppassword, setSignupPassword] = useState<string>("");
   const [signupname, setSignupName] = useState<string>("")
   const [projectname, setProjectName] = useState<string>("");
+  const [logout, setLogout] = useState<boolean>(true);
   const [projectdescription, setProjectDescription] = useState<string>("");
   const [collapseOpen, setCollapseOpen] = useState<boolean>(false);
   const [currProjectId, setCurrProjectId] = useState<string>("");
@@ -52,6 +55,7 @@ const App = () => {
   const [userEmail, setUserEmail] = useState<string>("");
   const [isSetAfterCookie, setIsSetAfterCookie] = useState<boolean>(false);
   const [newProjectFlag, setNewProjectFlag] = useState<boolean>(true);
+  const signOutRef = useRef(null)
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
@@ -76,6 +80,11 @@ const App = () => {
         }
       }).catch(e => {
       console.log(e);
+      if (e.status === 401){
+      document.cookie = "access_token=;  expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=127.0.0.1; path=/;";
+      console.log("cookie deleted")
+      }
+      
 
       
     });
@@ -95,6 +104,16 @@ const App = () => {
 
     setMenuState(open);
   };
+
+  const checkLoginLogout = () => {
+    if (userName === ""){
+      setLoginButton(!loginButton)
+    }
+    else handleSetLogout(!logout)
+  }
+  
+
+
   const loginPopover = (open: boolean) => (
     event: React.KeyboardEvent | React.MouseEvent,
   ) => {
@@ -107,6 +126,7 @@ const App = () => {
     }
     setLoginButton(open);
   };
+
 
   const signupPopover = (open:boolean) => (
     event: React.KeyboardEvent | React.MouseEvent,
@@ -145,11 +165,14 @@ const App = () => {
   const handleChangeSignupEmail = (e: any)=>{
     setSignupEmail(e.target.value)
   }
-
+  const handleSetLogout  = (e:any)=>{
+    setLogout(false)
+    logoutButtonFunction()
+  }
   const handleChangeSignupName = (e: any)=>{
     setSignupName(e.target.value)
   }
-
+  
   const handleChangeSignupPassword = (e: any)=>{
     setSignupPassword(e.target.value)
   }
@@ -189,6 +212,7 @@ const App = () => {
   };
 
   const loginThenSet = () => {
+    setLoginButton(false)
     const params = queryStringify({
       'grant_type': 'password',
       'username': loginemail,
@@ -209,6 +233,8 @@ const App = () => {
     ).then(result => {
       if (result.status === 200) {
         console.log(result);
+        
+        
         if (!isSetAfterCookie){
           getUserNameFromCookie()
         }
@@ -220,7 +246,13 @@ const App = () => {
     });
   }
 
-  
+  const logoutButtonFunction = () => {
+    document.cookie = "access_token=;  expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=127.0.0.1; path=/;";
+    setUserName("")
+    setUserEmail("")
+    setIsSetAfterCookie(false)
+    console.log("plsdeletecookie")
+  }
   const signupThenSet = () => {
     const data = {email: signupemail, hashed_password: signuppassword, full_name: signupname};
     fetch('http://127.0.0.1:8000/users/', {
@@ -245,6 +277,7 @@ const App = () => {
   }
 
   const createProjectThenSet = async () => {
+    setCreateProject(false)
     setMenuState(false);
     setCreateProject(false);
     setSelectedPage(Create);
@@ -312,7 +345,10 @@ const App = () => {
               style={{marginRight: '70px'}}
             />
             <Button color="inherit" style={{marginLeft: '10px'}} ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
-            <Button color="inherit" style={{marginLeft: '10px'}} ref={loginRef} onClick={()=>setLoginButton(!loginButton)}>Login</Button>
+            <Button color="inherit" style={{marginLeft: '10px'}} ref={loginRef} onClick={()=>checkLoginLogout()}>
+              {userName ? "logout" : "login"}
+            </Button>
+            {/* <Button color="inherit" style={{marginLeft: '10px'}} ref ={signOutRef} onClick={()=>handleSetLogout(!logout)}>Logout</Button> */}
             {/* <Button color="inherit" style={{marginLeft: '10px'}}  onClick={()=>tryMe()}>TRYME</Button> */}
             <Box fontSize={14} style={{marginLeft: '15px'}}>
               {userName ? 'Welcome back, ' + userName : undefined}
