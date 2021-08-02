@@ -21,7 +21,7 @@ class UserInfo(Base):
     full_name = Column(String)
     hashed_password = Column(String)
     disabled = Column(Boolean, default=False)
-    projects = relationship("Project", secondary="projects_users", viewonly=True, backref="projects_users",
+    projects = relationship("Project", secondary="projects_users", viewonly=True, sync_backref=False, backref="projects_users",
                             lazy="dynamic")
 
     @property
@@ -64,8 +64,9 @@ def return_projects(Base):
 
 class ProjectsUsers(Base):
     __tablename__ = "projects_users"
-    user_id = Column(Integer, ForeignKey('user.email'))
+    user_id = Column(String, ForeignKey('user.email'))
     project_id = Column(Integer, ForeignKey('project.id'), primary_key=True)
+
 
 
 Base.metadata.create_all(bind=engine)
