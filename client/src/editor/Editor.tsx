@@ -13,7 +13,6 @@ import * as utils from 'audio-buffer-utils';
 import {ChordData, STData, AudioTrackData, ProjectUrls, TrackInfo} from './Types';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import editorImg from '../images/editorBack.png';
 
 const useStyles = makeStyles({
   root: {

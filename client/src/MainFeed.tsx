@@ -1,6 +1,7 @@
 import {ProjectCard, ProjectProps} from './ProjectPreview';
 import React, { useEffect, useState } from "react";
 import axios from 'axios';
+import backImg from './images/feedBack.png';
 
 const MainFeed: React.FC = () => {
   const [projects, setProjects] = useState<ProjectProps[]>([]);
@@ -28,7 +29,7 @@ const MainFeed: React.FC = () => {
   }, [isSet, projects]);
 
   return (
-    <div>
+    <div style={{backgroundSize: 'contain', backgroundImage: "url(" + backImg + ")"}}>
         {projects.map((project, index) => {
           return <ProjectCard {...project} key={index}/>
         })}

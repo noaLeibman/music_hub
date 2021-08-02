@@ -1,4 +1,4 @@
-import { Card, CardContent, Grid, List, ListItem, ListItemText, makeStyles, Typography } from "@material-ui/core";
+import { Card, CardContent, Grid, List, ListItem, ListItemText, makeStyles, Paper, Typography } from "@material-ui/core";
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import MusicNoteIcon from '@material-ui/icons/MusicNote';
 import QueueMusicIcon from '@material-ui/icons/QueueMusic';
@@ -35,6 +35,9 @@ const useStyles = makeStyles({
   },
   grid: {
     flexGrow: 1,
+  },
+  message: {
+    margin: '40px',
   }
 });
 
@@ -80,7 +83,7 @@ const ProfilePage: React.FC<Props> = (props) => {
 
   return (
     <div>
-      <Grid container className={classes.grid} spacing={2}>
+      {(props.userName && props.email) ? <Grid container className={classes.grid} spacing={2}>
       <Grid item xs={1}></Grid>
         <Grid item xs={4}>
           <Card className={classes.details}>
@@ -118,6 +121,11 @@ const ProfilePage: React.FC<Props> = (props) => {
           </Card>
         </Grid>
       </Grid>
+      : <Paper style={{display: 'flex', justifyContent: 'center', padding: '30px', marginBottom: '30px', marginTop: '30px'}}>
+          <Typography className={classes.message} variant="h3" component="h2" align='center'>
+            <strong> Please Log In or Sign-Up! </strong>
+          </Typography>
+        </Paper> }
       <img src={waveImg} style={{height: "350px", width: '100%'}}></img>
     </div>
   );

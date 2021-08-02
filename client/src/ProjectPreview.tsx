@@ -3,7 +3,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import React, { useRef, useState } from 'react';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
-import { PeaksInstance } from 'peaks.js'
+import { PeaksInstance } from 'peaks.js';
+import defaultImg from './images/projDefault.jpg';
 
 type ProjectProps = {
 
@@ -18,6 +19,13 @@ type ProjectProps = {
 const useStyles = makeStyles({
     root: {
         display: 'flex',
+        marginLeft: '25%',
+        marginRight: '25%',
+        marginTop: '5%',
+        marginBottom: '5%',
+        boxShadow: '0 3px 5px 2px #a7abb0',
+        padding: '10px',
+        border: 1,
     },
     // root: {
     //     display: 'block',
@@ -47,8 +55,11 @@ const useStyles = makeStyles({
     },  
     content: {
         flex: '1 0 auto',
+        marginLeft: '30px',
     },
     cover: {
+        borderColor: 'black',
+        border: 1,
         width: 151,
     },  
   });
@@ -57,8 +68,7 @@ const ProjectCard: React.FC<ProjectProps> = (props) => {
     const classes = useStyles();
     const [playing, setPlaying] = useState<boolean>(false);
     // const [loaded, setLoaded] = useState<boolean>(false);
-    const waveformRef = useRef(null);
-    // const dummyRef = useRef(null);
+    // const waveformRef = useRef(null);
 
     const onClickPlay = () => {
         if (playing) {
@@ -73,51 +83,29 @@ const ProjectCard: React.FC<ProjectProps> = (props) => {
     return (
         <div>
             <Card className={classes.root}>
-            <div className={classes.details}>
-                <CardContent className={classes.content}>
-                <Typography component="h5" variant="h5">
-                    Live From Space
-                </Typography>
-                <Typography variant="subtitle1" color="textSecondary">
-                    Mac Miller
-                </Typography>
-                </CardContent>
-                <div className={classes.controls}>
-                    <IconButton aria-label="play/pause">
-                        <PlayArrowIcon className={classes.playIcon} />
-                    </IconButton>
-                </div>
-            </div>
-            <CardMedia
-                className={classes.cover}
-                image="/static/images/cards/live-from-space.jpg"
-                title="Live from space album cover"
-            />
-        </Card>
-
-
-            {/* <Card className={classes.root} variant="outlined">
-                <CardContent>
-                    <Typography variant="h5" component="h2">
-                    {props.project_name}
+                <CardMedia
+                    className={classes.cover}
+                    image={props.image_url === "" ? props.image_url : defaultImg}
+                />
+                <div className={classes.details}>
+                    <CardContent className={classes.content}>
+                    <Typography component="h5" variant="h5">
+                        <strong>{props.project_name}</strong>
                     </Typography>
-                    <Typography className={classes.pos} color="textSecondary">
-                    {props.author}
+                    <Typography variant="subtitle1" color="textSecondary">
+                        {props.author}
                     </Typography>
                     <Typography variant="body2" component="p">
-                    {props.description}
+                        {props.description}
                     </Typography>
-                </CardContent>
-                <div ref={waveformRef}/>
-                <div className={classes.controls}>
-                    <IconButton aria-label="play/pause" onClick={onClickPlay}>
-                       { playing ? <PauseIcon className={classes.playIcon} />: <PlayArrowIcon className={classes.playIcon} />}
-                    </IconButton>
+                    </CardContent>
+                    <div className={classes.controls}>
+                        <IconButton aria-label="play/pause">
+                            <PlayArrowIcon className={classes.playIcon} />
+                        </IconButton>
+                    </div>
                 </div>
-                <CardActions className={classes.cardButton} >
-                    <Button size="small" variant="contained" color="primary">Learn More</Button>
-                </CardActions>
-            </Card> */}
+            </Card>
         </div>
     );
 };
