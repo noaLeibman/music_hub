@@ -15,16 +15,16 @@ const useStyles = makeStyles({
   });
 
 type Props = {
-    onStop: (id: number, oldPosition: number, newPosition: number, duration: number) => void;
+    onStop: (id: string, oldPosition: number, newPosition: number, duration: number) => void;
     chordName: string;
-    id: number;
+    id: string;
     width: number;
     duration: number;
     position: number;
     startTime: number;
     wholeTrackWidth: number;
     color: string;
-    deleteChord: (id: number) => void;
+    deleteChord: (id: string) => void;
 };
 
 

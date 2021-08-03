@@ -55,11 +55,10 @@ const App = () => {
   const [userEmail, setUserEmail] = useState<string>("");
   const [isSetAfterCookie, setIsSetAfterCookie] = useState<boolean>(false);
   const [newProjectFlag, setNewProjectFlag] = useState<boolean>(true);
-  const signOutRef = useRef(null)
+  const [projectSaved, setProjectSaved] = useState<boolean>(false);
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
-  const getMenuList = () => [Main,Profile, Create];
   const searchSite = (text: string) => {};
 
   useEffect(() => {
@@ -184,16 +183,26 @@ const App = () => {
   const handleProjectDescriptionChange = (e: any)=>{
     setProjectDescription(e.target.value)
   }
+
+  const changeSelectedPage = (page: MenuItems) => {
+    if (selectedPage === Create && !projectSaved) {
+      if(window.confirm("Are you sure you want to leave? To save your changes click 'SAVE PROJECT' first")) {
+        setSelectedPage(page);
+      }
+    } else {
+      setSelectedPage(page);
+    }
+  }
   
   const getMenuDrawer = () => {
     return (
       <Drawer anchor='left' open={menuState} ref={createRef} onClose={toggleDrawer(false)}>
         <List>
-          <ListItem button key={MenuItems.Main} onClick={() => setSelectedPage(MenuItems.Main)}>
+          <ListItem button key={MenuItems.Main} onClick={() => changeSelectedPage(MenuItems.Main)}>
             <ListItemIcon><DnsIcon/></ListItemIcon>
             <ListItemText primary={MenuItems.Main} />
           </ListItem>
-          <ListItem button key={MenuItems.Profile} onClick={() => setSelectedPage(MenuItems.Profile)}>
+          <ListItem button key={MenuItems.Profile} onClick={() => changeSelectedPage(MenuItems.Profile)}>
             <ListItemIcon><AccountCircleIcon/></ListItemIcon>
             <ListItemText primary={MenuItems.Profile} />
           </ListItem>
@@ -351,7 +360,7 @@ const App = () => {
             {/* <Button color="inherit" style={{marginLeft: '10px'}} ref ={signOutRef} onClick={()=>handleSetLogout(!logout)}>Logout</Button> */}
             {/* <Button color="inherit" style={{marginLeft: '10px'}}  onClick={()=>tryMe()}>TRYME</Button> */}
             <Box fontSize={14} style={{marginLeft: '15px'}}>
-              {userName ? 'Welcome back, ' + userName : undefined}
+              {userName ? 'Welcome, ' + userName : undefined}
               </Box>
             <Popover
                   anchorOrigin={{
@@ -420,6 +429,8 @@ const App = () => {
           <Editor
             projectId={currProjectId}
             newProject={newProjectFlag}
+            projectSaved={projectSaved}
+            setProjectSaved={setProjectSaved}
           />  
         }
         { selectedPage === Profile &&

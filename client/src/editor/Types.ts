@@ -2,7 +2,7 @@ import * as Tone from 'tone';
 import {PeaksPlayer} from "../ToneComponents";
 
 type ChordData = {
-  id: number;
+  id: string;
   name: string;
   duration: number;
   durationStr: string;
@@ -11,8 +11,8 @@ type ChordData = {
 
 type STData = {
   synth: Tone.PolySynth;
-  activeChords: Map<number,ChordData>;
-  chordsOrder: number[];
+  activeChords: Map<string, ChordData>;
+  chordsOrder: string[];
   length: number;
 }
 
@@ -37,15 +37,6 @@ type AudioTrackData = {
   slices: number[][];
   trackInfo: TrackInfo | undefined;
 }
-
-// type UTData = {
-//   player: PeaksPlayer;
-//   effects: EffectsData;
-//   url?: string;
-//   file: Blob | undefined;
-//   slices: number[][];
-//   trackInfo: TrackInfo | undefined;
-// }
 
 type SynthData = {
   activeChords: ChordData[];

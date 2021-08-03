@@ -14,7 +14,7 @@ const MainFeed: React.FC = () => {
       'Access-Control-Allow-Credentials':'true'
       }
     };
-    const projectPreviewData = axios.get('http://127.0.0.1:8000/projects_recent', options
+    axios.get('http://127.0.0.1:8000/projects_recent', options
     ).then(projectPreviewData => {
       console.log(projectPreviewData);
       setProjects(JSON.parse(projectPreviewData.data))

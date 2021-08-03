@@ -1,19 +1,16 @@
-import { Button, Card, CardActions, CardContent, CardMedia, IconButton, Typography } from '@material-ui/core';
+import { Card, CardContent, CardMedia, IconButton, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
-import PauseIcon from '@material-ui/icons/Pause';
 import { PeaksInstance } from 'peaks.js';
 import defaultImg from './images/projDefault.jpg';
 
 type ProjectProps = {
-
     image_url?: string;
     project_name: string;
     author: string;
     description: string;
     peaks?: PeaksInstance;
-
 }
 
 const useStyles = makeStyles({
@@ -27,15 +24,6 @@ const useStyles = makeStyles({
         padding: '10px',
         border: 1,
     },
-    // root: {
-    //     display: 'block',
-    //     width: '50%',
-    //     marginLeft: '25%',
-    //     marginRight: '25%',
-    //     marginTop: '5%',
-    //     marginBottom: '5%',
-    //     backgroundColor: '#e8edea',
-    // },
     pos: {
       marginBottom: 12,
     },
@@ -66,19 +54,17 @@ const useStyles = makeStyles({
   
 const ProjectCard: React.FC<ProjectProps> = (props) => {
     const classes = useStyles();
-    const [playing, setPlaying] = useState<boolean>(false);
-    // const [loaded, setLoaded] = useState<boolean>(false);
-    // const waveformRef = useRef(null);
+    // const [playing, setPlaying] = useState<boolean>(false);
 
-    const onClickPlay = () => {
-        if (playing) {
-            props.peaks?.player.pause();
-            setPlaying(false);
-        } else {
-            props.peaks?.player.play();
-            setPlaying(true);
-        }
-    }
+    // const onClickPlay = () => {
+    //     if (playing) {
+    //         props.peaks?.player.pause();
+    //         setPlaying(false);
+    //     } else {
+    //         props.peaks?.player.play();
+    //         setPlaying(true);
+    //     }
+    // }
 
     return (
         <div>

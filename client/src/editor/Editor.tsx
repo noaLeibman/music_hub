@@ -41,6 +41,8 @@ const useStyles = makeStyles({
 type Props = {
   projectId: string;
   newProject: boolean;
+  projectSaved: boolean;
+  setProjectSaved: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const Editor: React.FC<Props> = (props) => {
@@ -63,6 +65,27 @@ const Editor: React.FC<Props> = (props) => {
     initState();
   }, []);
 
+  useEffect(() => {
+    if (props.newProject && !projectRetrieved) {
+      setProjectRetrieved(true);
+    }
+  }, [props, projectRetrieved]);
+
+  useEffect(() => {
+      return function cleanSynths() {
+        console.log('cleaning up synths');
+        Tone.Transport.cancel();
+        Array.from(synthTracks.values()).forEach((track: STData) => {
+          console.log('clean');
+          track.synth.disconnect(Tone.getDestination());
+          track.synth.unsync();
+          track.synth.dispose();
+        });
+      }
+  }, []);
+  
+  const {newProject, setProjectSaved, projectSaved} = props;
+
   const getProject = useCallback(() => {
     const options = {
       withCredentials :true,
@@ -73,19 +96,26 @@ const Editor: React.FC<Props> = (props) => {
     axios.get('http://127.0.0.1:8000/presigned_get/?project_id=' + props.projectId, options)
     .then(projectData => {
       console.log(projectData);
+      setProjectSaved(true);
       createFromJson(JSON.parse(projectData.data));
     }).catch(error => {
       console.log(error);
     });
-  }, [props.projectId]);
+  }, [props.projectId, setProjectSaved]);
 
   useEffect(() => {
-    if (!props.newProject && !projectRetrieved) {
+    if (!newProject && !projectRetrieved) {
       console.log('getting project');
       setProjectRetrieved(true);
       getProject();
     }
-  }, [props.newProject, projectRetrieved, getProject]);
+  }, [newProject, projectRetrieved, getProject, setProjectSaved]);
+
+  useEffect(() => {
+    if (projectSaved && projectRetrieved) {
+      setProjectSaved(false);
+    }
+  }, [audioTracks, synthTracks, projectSaved, setProjectSaved, projectRetrieved]);
   
   const handleLongestTrack = (value: number) => {
     setLongestTrack(value);
@@ -143,7 +173,17 @@ const Editor: React.FC<Props> = (props) => {
     Tone.Transport.seconds = 0;
   }
 
-  const setSTChordsOrder = (newOrder: number[], id: string) => {
+  const setSTLength = (length: number, id: string) => {
+    let track = synthTracks.get(id);
+    if (!track) {
+      console.log('setSTLength: track id not found');
+      return;
+    }
+    track.length = length
+    setSynthTracks((new Map(synthTracks)).set(id, track));
+  }
+
+  const setSTChordsOrder = (newOrder: string[], id: string) => {
     let track = synthTracks.get(id);
     if (!track) {
       console.log('setSTChordsOrder: track id not found');
@@ -153,7 +193,7 @@ const Editor: React.FC<Props> = (props) => {
     setSynthTracks((new Map(synthTracks)).set(id, track));
   }
 
-  const setSTActiveChords = (newActiveChords: Map<number,ChordData>, id: string) => {
+  const setSTActiveChords = (newActiveChords: Map<string, ChordData>, id: string) => {
     let track = synthTracks.get(id);
     if (!track) {
       console.log('setSTChordsOrder: track id not found');
@@ -419,7 +459,7 @@ const Editor: React.FC<Props> = (props) => {
     }).catch(function (error) {
       console.log(error);
     });
-    console.log(JSON.stringify(json, replacer));
+    props.setProjectSaved(true);
   }
 
   const sendAudioTracks = () => {
@@ -512,8 +552,8 @@ const Editor: React.FC<Props> = (props) => {
           {Array.from(synthTracks).map(([id, data]) => {
             return <SynthTrack
               id={id}
-              initialLength={data.length}
-              setTracksLength={setLongestTrack}
+              length={data.length}
+              setLength={setSTLength}
               activeChords={data.activeChords}
               chordsOrder={data.chordsOrder}
               synth={data.synth}

@@ -126,7 +126,7 @@ const ProfilePage: React.FC<Props> = (props) => {
             <strong> Please Log In or Sign-Up! </strong>
           </Typography>
         </Paper> }
-      <img src={waveImg} style={{height: "350px", width: '100%'}}></img>
+      <img src={waveImg} alt="" style={{height: "350px", width: '100%'}}></img>
     </div>
   );
 }
