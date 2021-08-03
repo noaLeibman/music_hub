@@ -38,6 +38,12 @@ class UserInfoBase(BaseModel):
     class Config:
         orm_mode = True
 
+class FileDelete(BaseModel):
+    file_name: str
+
+class FileDeleteList(BaseModel):
+    files: List[FileDelete]
+
 
 class ProjectDataOut(BaseModel):
     project_id: str

@@ -18,7 +18,12 @@ def get_user_by_email(db: Session, email: str):
 
 
 def get_all_projects_by_date(db: Session, limit: int = 10):
-    projects = db.query(models.Project).order_by(desc(models.Project.last_edited)).limit(10).all()
+    projects = (
+        db.query(models.Project)
+        .order_by(desc(models.Project.last_edited))
+        .limit(10)
+        .all()
+    )
     uuid_list = []
     for project in projects:
         uuid_list.append(project.uuid)
@@ -42,11 +47,16 @@ def get_project_by_name(db: Session, name: str):
     return db.query(models.Project).filter(models.Project.project_name == name).first()
 
 
+def project_delete(db: Session, id : str):
+    obj = db.query(models.Project).filter(models.Project.uuid == id).first()
+    db.delete(obj)
+    db.commit()
+
 def get_project_by_id(db: Session, id: str):
     return db.query(models.Project).filter(models.Project.uuid == id).first()
 
 
-def get_projects_metadata(db:Session, uuid_list : List[str]):
+def get_projects_metadata(db: Session, uuid_list: List[str]):
     all_projects_list = []
 
     if len(uuid_list) > 0:
@@ -60,6 +70,7 @@ def get_projects_metadata(db:Session, uuid_list : List[str]):
             all_projects_list.append(project_dict)
     return all_projects_list
 
+
 def get_user_projects_uuid(db: Session, user_mail: str):
     user = get_user_by_email(db, user_mail)
     projects_list = user.projects_list_uuid
@@ -70,7 +81,10 @@ def create_project_2(db: Session, project: schemas.Project):
     user_to_add = get_user_by_email(db, project.email)
     author_name = user_to_add.full_name
     db_project_to_add = models.Project(
-        email=project.email, project_name=project.project_name, author_name=author_name, description = project.description
+        email=project.email,
+        project_name=project.project_name,
+        author_name=author_name,
+        description=project.description,
     )
 
     db_project_to_add.sign_up(user_to_add)
@@ -78,6 +92,7 @@ def create_project_2(db: Session, project: schemas.Project):
     db.commit()
     db.refresh(db_project_to_add)
     return db_project_to_add
+
 
 
 def project_change_edit(db: Session, project: models.Project):
