@@ -14,8 +14,10 @@ import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 import MainFeed from './MainFeed';
 import Editor from './editor/Editor';
 import axios from 'axios';
+import {useDropzone} from 'react-dropzone';
 import queryStringify from 'qs-stringify';
 import ProfilePage from './ProfilePage';
+import { createNoSubstitutionTemplateLiteral } from 'typescript';
 
 export const baseUrl = 'http://127.0.0.1:8000/';
 
@@ -57,6 +59,7 @@ const App = () => {
   const [isSetAfterCookie, setIsSetAfterCookie] = useState<boolean>(false);
   const [newProjectFlag, setNewProjectFlag] = useState<boolean>(true);
   const [projectSaved, setProjectSaved] = useState<boolean>(false);
+  const [createProjectImage, setCreateProjectImage] = useState<string>("")
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
@@ -149,7 +152,20 @@ const App = () => {
     }
     setCreateProject(open);
   };
+  const acceptFile = (files: any, e:any) =>{
+    console.log(files)
+    const image_url_upload = URL.createObjectURL(files[0])
+    setCreateProjectImage(image_url_upload)
+
+  }
+  const {getRootProps, getInputProps} = useDropzone({
+    accept: 'image/*',
+    onDrop: acceptFile,
+    maxFiles: 1,
+  });
+
   
+
   const handleChangeLoginEmail= (e: any)=> {
     setLoginEmail(e.target.value)
   }
@@ -401,8 +417,17 @@ const App = () => {
                     <Box display="flex" flexDirection="column">
                       <TextField label="Project Name:" value={projectname} onChange = {handleProjectNameChange}/>
                       <TextField label="Description:" value={projectdescription} onChange = {handleProjectDescriptionChange}/>
+                      {createProjectImage === "" ? 
+                      <Box>
+                      <div {...getRootProps({className: 'dropzone'})}>
+                      <input {...getInputProps()} />
+                      <p>Drag and drop a file here, or click to select file</p>
+                      </div> 
+                      </Box>
+                      : <img src = {createProjectImage} style={{maxWidth: '300px'}}/>
+                      }
                       <Button onClick={createProjectThenSet}>Apply</Button>
-                  </Box>  
+                    </Box>  
             </Popover>
             <Collapse in={collapseOpen}>
               <Alert
