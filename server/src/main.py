@@ -69,6 +69,7 @@ def authenticate_user(email: str, password: str, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email)
     if not db_user:
         return False
+    encoded_pw = password.encode("utf8")
     password_check = bcrypt.checkpw(password.encode("utf8"), db_user.hashed_password)
     if password_check is False:
         return False
@@ -189,7 +190,7 @@ async def get_project(db:Session = Depends(get_db)):
     dict_json = json.dumps(projects_list)
     return dict_json
 
-@app.get("/project/{email}")
+@app.get("/project/")
 async def get_project(mail: str, db: Session = Depends(get_db)):
     uuid_list = crud.get_user_projects_uuid(db, mail)
     projects_list = crud.get_projects_metadata(db, uuid_list)
