@@ -33,11 +33,6 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
   },
-  backgraound : {
-    backgroundColor: 'yellow',
-    height: '100%',
-    width: '100%',
-  },
   button: {
     margin: '5px'
   },
@@ -455,7 +450,7 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   return (
-    <Box className={classes.backgraound}>
+    <Box>
       <div style={{width: '120px', float: 'left'}}>
         <Metronome/>
         <Box className={classes.root}>
