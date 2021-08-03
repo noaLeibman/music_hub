@@ -17,13 +17,30 @@ import axios from 'axios';
 import {useDropzone} from 'react-dropzone';
 import queryStringify from 'qs-stringify';
 import ProfilePage from './ProfilePage';
-import { createNoSubstitutionTemplateLiteral } from 'typescript';
+import CloseIcon from '@material-ui/icons/Close';
 
 export const baseUrl = 'http://127.0.0.1:8000/';
 
+const dropzoneStyle = {
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '20px',
+  margin: '10px',
+  borderWidth: 2,
+  borderRadius: 2,
+  borderColor: '#eeeeee',
+  borderStyle: 'dashed',
+  backgroundColor: '#fafafa',
+  color: '#bdbdbd',
+  outline: 'none',
+  transition: 'border .24s ease-in-out',
+};
+
 const useStyles = makeStyles({
   popover: {
-      padding: '35px'
+      padding: '20px'
   }
 });
 
@@ -212,7 +229,7 @@ const App = () => {
   
   const getMenuDrawer = () => {
     return (
-      <Drawer anchor='left' open={menuState} ref={createRef} onClose={toggleDrawer(false)}>
+      <Drawer anchor='left' open={menuState} onClose={toggleDrawer(false)}>
         <List>
           <ListItem button key={MenuItems.Main} onClick={() => changeSelectedPage(MenuItems.Main)}>
             <ListItemIcon><DnsIcon/></ListItemIcon>
@@ -355,8 +372,7 @@ const App = () => {
   }
 
   return (
-    <div className="App">
-      <Box style={{height: '100%'}}>
+    <div className="App" ref={createRef} >
         {getMenuDrawer()}
         <AppBar position="static" color='primary'>
           <Toolbar>
@@ -381,12 +397,12 @@ const App = () => {
             {userName === "" && 
               <Button color="inherit" style={{marginLeft: '10px'}} ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
             }
+            <Box fontSize={14} style={{marginLeft: '15px'}}>
+              {userName ? 'Welcome, ' + userName : undefined}
+            </Box>
             <Button color="inherit" style={{marginLeft: '10px'}} ref={loginRef} onClick={()=>checkLoginLogout()}>
               {userName ? "logout" : "login"}
             </Button>
-            <Box fontSize={14} style={{marginLeft: '15px'}}>
-              {userName ? 'Welcome, ' + userName : undefined}
-              </Box>
             <Popover
                   anchorOrigin={{
                   vertical: 'bottom',
@@ -394,10 +410,11 @@ const App = () => {
                   }}
                   anchorEl={loginRef.current} 
                   open={loginButton}
-                  onClose = {loginPopover(false)}>
+                  onClose={loginPopover(false)}
+                  classes={{paper: classes.popover}}>
                   <Box display="flex" flexDirection="column">
-                      <TextField label=" e-mail" value={loginemail} onChange = {handleChangeLoginEmail}/>
-                      <TextField label=" password" value={loginpassword} onChange = {handleChangeLoginPassword}/>
+                      <TextField label=" e-mail" value={loginemail} onChange={handleChangeLoginEmail}/>
+                      <TextField label=" password" type="password" value={loginpassword} onChange={handleChangeLoginPassword}/>
                       <Button onClick={loginThenSet}>Apply</Button>
                   </Box>  
             </Popover>
@@ -408,19 +425,20 @@ const App = () => {
                   }}
                   anchorEl={signupRef.current}
                   open={signupButton}
-                  onClose = {signupPopover(false)}
+                  onClose={signupPopover(false)}
+                  classes={{paper: classes.popover}}
                   >
                       <Box display="flex" flexDirection="column">
                       <TextField label="Full Name" value={signupname} onChange = {handleChangeSignupName}/>  
                       <TextField label="E-mail" value={signupemail} onChange = {handleChangeSignupEmail}/>
-                      <TextField label="Passsword" value={signuppassword} onChange = {handleChangeSignupPassword}/>
+                      <TextField label="Passsword" value={signuppassword} type="password" onChange = {handleChangeSignupPassword}/>
                       <Button onClick={signupThenSet}>Create</Button>
                   </Box> 
             </Popover> 
             <Popover
               anchorOrigin={{
-                  vertical: 'center',
-                  horizontal: 'center',
+                  vertical: 200,
+                  horizontal: 500,
                   }}
                   classes = {{paper: classes.popover}}
                   anchorEl ={createRef.current}
@@ -431,10 +449,13 @@ const App = () => {
                       <TextField label="Description:" value={projectdescription} onChange = {handleProjectDescriptionChange}/>
                       {createProjectImage === "" ? 
                       <Box>
-                      <div {...getRootProps({className: 'dropzone'})}>
-                      <input {...getInputProps()} />
-                      <p>Drag and drop a file here, or click to select file</p>
-                      </div> 
+                        <Typography variant="body1" component="p" align="left" color="textSecondary" style={{marginTop: '20px'}}>
+                          Project Image (optional):
+                        </Typography>
+                        <div {...getRootProps({className: 'dropzone', style: dropzoneStyle})}>
+                          <input {...getInputProps()} />
+                          <p>Drag and drop a file here, or click to select file</p>
+                        </div> 
                       </Box>
                       : <img src = {createProjectImage} style={{maxWidth: '300px'}}/>
                       }
@@ -451,13 +472,14 @@ const App = () => {
               onClick={() => {
               setCollapseOpen(false);
             }}>
+              <CloseIcon/>
           </IconButton>}
             >Please log in using your new credentials</Alert>
             </Collapse>
           </Toolbar>
         </AppBar>
         { selectedPage === Main && 
-          <MainFeed />   
+          <MainFeed /> 
         }
         { selectedPage === Create && 
           <Editor
@@ -474,7 +496,6 @@ const App = () => {
             openEditor={openEditorOnProject}
           />
         }
-      </Box>
     </div>
   );
 }

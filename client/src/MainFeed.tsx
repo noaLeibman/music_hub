@@ -16,24 +16,38 @@ const MainFeed: React.FC = () => {
       }
     };
     axios.get(baseUrl + 'project/recent', options
-    ).then(projectPreviewData => {
-      // console.log(projectPreviewData);
-      setProjects(JSON.parse(projectPreviewData.data))
-      setIsSet(true)
+    ).then(async projectPreviewData => {
+      let projectsData: ProjectProps[] = JSON.parse(projectPreviewData.data, 
+        (key, value) => {if (key === 'image_url' && typeof value !== 'string') {
+          return "";
+        } 
+        return value;
+      });
+      console.log(projectsData);
+      setProjects(projectsData);
     }).catch(e => console.log(e));
   }
 
   useEffect(() => {
-    // console.log(isSet);
     if (!isSet){
+      setIsSet(true);
       getRecentProjects()
     }
   }, [isSet, projects]);
 
   return (
-    <div style={{backgroundSize: 'contain', backgroundImage: "url(" + backImg + ")"}}>
+    <div style={{
+      backgroundImage: "url(" + backImg + ")",
+      backgroundAttachment: 'fixed',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'cover',
+      overflow: 'auto',
+      }}>
         {projects.map((project, index) => {
-          return <ProjectCard {...project} key={index}/>
+          return <div style={{margin: '5%'}}>
+            <ProjectCard {...project} key={index}/>
+          </div>
         })}
     </div>
   );

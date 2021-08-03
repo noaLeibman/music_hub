@@ -13,6 +13,7 @@ type ProjectDetails = {
   description: string;
   uuid: string;
   image: string | undefined;
+  imageGetUrl: string | undefined;
 }
 
 type Props = {
@@ -45,7 +46,7 @@ const useStyles = makeStyles({
 });
 
 const options = {
-  withCredentials :true,
+  withCredentials: true,
   headers: {
   'Access-Control-Allow-Credentials':'true'
   }
@@ -60,20 +61,21 @@ const ProfilePage: React.FC<Props> = (props) => {
     if (!alreadyGotProjects && props.email !== "") {
       setAlreadyGotProjects(true);
       axios.get(baseUrl + 'users/project?mail=' + props.email, options
-      ).then(userProjectsData => {
+      ).then(async userProjectsData => {
         console.log(userProjectsData.data);
         const projectsList: ProjectDetails[] = JSON.parse(userProjectsData.data).map((project: any) => {
-          // let image;
-          // if (userProjectsData.data.image_url[0]) {
-          //   image = (await axios.get(userProjectsData.data.image_url[0], options)).data;
-          // }
           return {
             name: project.project_name,
             description: project.description,
             uuid: project.project_id,
-            image: userProjectsData.data.image_url ? userProjectsData.data.image_url[0] : undefined,
+            image: undefined,
+            imageGetUrl: project.image_url !== [] ? project.image_url : undefined,
           }
         });
+        console.log(projectsList);
+        // await Promise.all(projectsList.map(async (project) => {
+        //   if (project.imageGetUrl) project.image = await axios.get(project.imageGetUrl, options);
+        // }));
         setProjects(projectsList);
       }).catch(error => {
         console.log(error);
@@ -150,8 +152,8 @@ const ProfilePage: React.FC<Props> = (props) => {
           </Card>
         </Grid>
       </Grid>
-      : <Paper style={{display: 'flex', justifyContent: 'center', padding: '30px', marginBottom: '30px', marginTop: '30px'}}>
-          <Typography className={classes.message} variant="h3" component="h2" align='center'>
+      : <Paper variant="outlined" square style={{display: 'flex', justifyContent: 'center', padding: '30px', margin: '30px'}}>
+          <Typography className={classes.message} variant="h4" component="h2" align='center'>
             <strong> Please Log In or Sign-Up! </strong>
           </Typography>
         </Paper> }

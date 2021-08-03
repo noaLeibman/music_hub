@@ -70,4 +70,12 @@ type ProjectData = {
   audioTracks: TrackInfo[];
 }
 
-export type {ChordData, STData, AudioTrackData, ProjectUrls, ProjectData, SynthData, EffectsData, TrackInfo};
+type ProjectDetails = {
+  name: string;
+  description: string;
+  uuid: string;
+  image: string | undefined;
+  imageGetUrl: string | undefined;
+}
+
+export type {ChordData, STData, AudioTrackData, ProjectUrls, ProjectData, SynthData, EffectsData, TrackInfo, ProjectDetails};
