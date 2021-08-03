@@ -5,6 +5,7 @@ import QueueMusicIcon from '@material-ui/icons/QueueMusic';
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import waveImg from './images/wave.png';
+import {baseUrl} from './App';
 
 type ProjectDetails = {
   name: string;
@@ -55,7 +56,7 @@ const ProfilePage: React.FC<Props> = (props) => {
         'Access-Control-Allow-Credentials':'true'
         }
       };
-      axios.get('http://127.0.0.1:8000/project?mail=' + props.email, options
+      axios.get(baseUrl + 'users/project?mail=' + props.email, options
       ).then(userProjectsData => {
         console.log(userProjectsData.data);
         const projectsList: ProjectDetails[] = JSON.parse(userProjectsData.data).map((project: any) => {

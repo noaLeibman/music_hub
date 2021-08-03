@@ -16,8 +16,9 @@ import Editor from './editor/Editor';
 import axios from 'axios';
 import queryStringify from 'qs-stringify';
 import ProfilePage from './ProfilePage';
-import { createFalse } from 'typescript';
-import { FormatColorReset } from '@material-ui/icons';
+
+export const baseUrl = 'http://127.0.0.1:8000/';
+
 const useStyles = makeStyles({
   popover: {
       padding: '35px'
@@ -68,7 +69,7 @@ const App = () => {
   }, [isSet, userName])
 
   const getUserNameFromCookie = () =>{
-      axios.get('http://127.0.0.1:8000/users/me/', 
+      axios.get(baseUrl + 'users/me/', 
       {withCredentials: true}).then(userData=> {          
         if (userData.status === 200){
           console.log(userData);
@@ -78,14 +79,10 @@ const App = () => {
           setIsSetAfterCookie(true)   
         }
       }).catch(e => {
-      console.log(e);
-      if (e.status === 401){
-      document.cookie = "access_token=;  expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=127.0.0.1; path=/;";
-      console.log("cookie deleted")
-      }
-      
-
-      
+        if (e.status === 401){
+          document.cookie = "access_token=;  expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=127.0.0.1; path=/;";
+          console.log("cookie deleted")
+        }
     });
     setIsSet(true)
   }
@@ -238,7 +235,7 @@ const App = () => {
       'Access-Control-Allow-Credentials':'true',
       }
     };
-    axios.post('http://127.0.0.1:8000/token', params, options
+    axios.post(baseUrl + 'token', params, options
     ).then(result => {
       if (result.status === 200) {
         console.log(result);
@@ -264,7 +261,7 @@ const App = () => {
   }
   const signupThenSet = () => {
     const data = {email: signupemail, hashed_password: signuppassword, full_name: signupname};
-    fetch('http://127.0.0.1:8000/users/', {
+    fetch(baseUrl + 'users/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -297,7 +294,7 @@ const App = () => {
       return;
     }
     const data = {project_name: projectname, email: email, description: projectdescription}
-    fetch('http://127.0.0.1:8000/create_project/', {
+    fetch(baseUrl + 'project/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -318,7 +315,7 @@ const App = () => {
   }
 
   const tryMe = async () => {
-    const res = await axios.get('http://127.0.0.1:8000/users/me/', {withCredentials: true});
+    const res = await axios.get(baseUrl + 'users/me/', {withCredentials: true});
     console.log(res);
     return res.data.email;
   }
@@ -353,12 +350,12 @@ const App = () => {
               onRequestSearch={() => searchSite(searchText)}
               style={{marginRight: '70px'}}
             />
-            <Button color="inherit" style={{marginLeft: '10px'}} ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
+            {userName === "" && 
+              <Button color="inherit" style={{marginLeft: '10px'}} ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
+            }
             <Button color="inherit" style={{marginLeft: '10px'}} ref={loginRef} onClick={()=>checkLoginLogout()}>
               {userName ? "logout" : "login"}
             </Button>
-            {/* <Button color="inherit" style={{marginLeft: '10px'}} ref ={signOutRef} onClick={()=>handleSetLogout(!logout)}>Logout</Button> */}
-            {/* <Button color="inherit" style={{marginLeft: '10px'}}  onClick={()=>tryMe()}>TRYME</Button> */}
             <Box fontSize={14} style={{marginLeft: '15px'}}>
               {userName ? 'Welcome, ' + userName : undefined}
               </Box>

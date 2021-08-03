@@ -16,7 +16,7 @@ const useStyles = makeStyles({
     },
     effectIcon: {
         maxWidth: '30%',
-    }
+    },
 });
 
 type Props = {
@@ -284,7 +284,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     return (
       <Card variant="outlined">
           <Grid container>
-            <Grid item xs={1} style={{position: 'relative'}}>
+            <Grid item xs={1} style={{position: 'relative', marginLeft: '20px'}}>
                 {renderControls()}
                 <Popover
                     anchorEl={sliceRef.current}
@@ -307,7 +307,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     <MenuItem onClick={() => props.addEffect('tremolo', tremoloValue, props.id)}>Tremolo</MenuItem>
                 </Menu>
             </Grid>
-            <Grid item xs={10} ref={zoomRef}>
+            <Grid item xs={10} ref={zoomRef} style={{marginLeft: '20px'}}>
             </Grid>
           </Grid>
       </Card>

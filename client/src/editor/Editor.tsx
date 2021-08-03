@@ -13,6 +13,7 @@ import * as utils from 'audio-buffer-utils';
 import {ChordData, STData, AudioTrackData, ProjectUrls, TrackInfo} from './Types';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import {baseUrl} from '../App';
 
 const useStyles = makeStyles({
   root: {
@@ -93,7 +94,7 @@ const Editor: React.FC<Props> = (props) => {
       'Access-Control-Allow-Credentials':'true'
       }
     };
-    axios.get('http://127.0.0.1:8000/presigned_get/?project_id=' + props.projectId, options)
+    axios.get(baseUrl + 'project/presigned_get_url?project_id=' + props.projectId, options)
     .then(projectData => {
       console.log(projectData);
       setProjectSaved(true);
@@ -422,7 +423,7 @@ const Editor: React.FC<Props> = (props) => {
     };
     const jsonType = 'application/json';
     const presignedData = await axios.get(
-      'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=project.json&content=" + jsonType,
+      baseUrl + 'project/presigned_put_url/?project_id=' + props.projectId + "&filename=project.json&content=" + jsonType,
       options
     );
     console.log(presignedData);
@@ -473,7 +474,7 @@ const Editor: React.FC<Props> = (props) => {
       let contentType = value.type === 'recorded' ? 'audio/webm;codecs=opus' : 'audio/mpeg';
       let postfix = value.type === 'recorded' ? '.webm' : '.mp3';
       const presignedData = await axios.get(
-        'http://127.0.0.1:8000/presigned_url/?project_id=' + props.projectId + "&filename=" + value.type + "_" + key + postfix + 
+        baseUrl + 'project/presigned_put_url/?project_id=' + props.projectId + "&filename=" + value.type + "_" + key + postfix + 
         "&content=" + contentType, options
       );
       console.log(presignedData);

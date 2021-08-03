@@ -125,7 +125,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     }
 
     const deleteTrack = () => {
-        if(window.confirm("Detele this track?")) {
+        if(window.confirm("Delete this track?")) {
             props.player.dispose();
             props.deleteTrack(props.id, 'uploaded');
         }

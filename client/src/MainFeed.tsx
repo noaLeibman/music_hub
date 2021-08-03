@@ -2,6 +2,7 @@ import {ProjectCard, ProjectProps} from './ProjectPreview';
 import React, { useEffect, useState } from "react";
 import axios from 'axios';
 import backImg from './images/feedBack.png';
+import { baseUrl } from './App';
 
 const MainFeed: React.FC = () => {
   const [projects, setProjects] = useState<ProjectProps[]>([]);
@@ -14,15 +15,16 @@ const MainFeed: React.FC = () => {
       'Access-Control-Allow-Credentials':'true'
       }
     };
-    axios.get('http://127.0.0.1:8000/projects_recent', options
+    axios.get(baseUrl + 'project/recent', options
     ).then(projectPreviewData => {
       console.log(projectPreviewData);
       setProjects(JSON.parse(projectPreviewData.data))
       setIsSet(true)
-    });
+    }).catch(e => console.log(e));
   }
 
   useEffect(() => {
+    console.log(isSet);
     if (!isSet){
       getRecentProjects()
     }
