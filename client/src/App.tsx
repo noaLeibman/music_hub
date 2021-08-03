@@ -60,6 +60,7 @@ const App = () => {
   const [newProjectFlag, setNewProjectFlag] = useState<boolean>(true);
   const [projectSaved, setProjectSaved] = useState<boolean>(false);
   const [createProjectImage, setCreateProjectImage] = useState<string>("")
+  const [createProjectImageFile, setCreateProjectImageFile] = useState<Blob>()
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
@@ -155,7 +156,9 @@ const App = () => {
   const acceptFile = (files: any, e:any) =>{
     console.log(files)
     const image_url_upload = URL.createObjectURL(files[0])
+    setCreateProjectImageFile(files[0])
     setCreateProjectImage(image_url_upload)
+    
 
   }
   const {getRootProps, getInputProps} = useDropzone({
@@ -318,16 +321,24 @@ const App = () => {
       body: JSON.stringify(data),
     })
     .then(response => response.json())
-    .then(data => {
+    .then(async data => {
       console.log('Success:', data);
       setCurrProjectId(data.uuid);
       setMenuState(false);
       setCreateProject(false);
       setSelectedPage(Create);
+
+      const project_id = data.uuid
+      if(createProjectImageFile){
+        const puturl = await axios.get(baseUrl + 'project/presigned_put_url?project_id='+project_id+'&filename=project_preview&content='+createProjectImageFile.type,
+        {withCredentials: true})        
+      
+        axios.put(puturl.data, createProjectImageFile, {headers: {'Content-Type': createProjectImageFile.type}})
+        .then (response => {
+          console.log(response)
+        })
+      }
     })
-    .catch((error) => {
-      console.error('Error:', error);
-    });
   }
 
   const tryMe = async () => {
