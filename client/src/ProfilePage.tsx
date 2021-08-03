@@ -12,6 +12,7 @@ type ProjectDetails = {
   name: string;
   description: string;
   uuid: string;
+  image: string | undefined;
 }
 
 type Props = {
@@ -62,10 +63,15 @@ const ProfilePage: React.FC<Props> = (props) => {
       ).then(userProjectsData => {
         // console.log(userProjectsData.data);
         const projectsList: ProjectDetails[] = JSON.parse(userProjectsData.data).map((project: any) => {
+          // let image;
+          // if (userProjectsData.data.image_url[0]) {
+          //   image = (await axios.get(userProjectsData.data.image_url[0], options)).data;
+          // }
           return {
             name: project.project_name,
             description: project.description,
             uuid: project.project_id,
+            image: userProjectsData.data.image_url ? userProjectsData.data.image_url[0] : undefined,
           }
         });
         setProjects(projectsList);
