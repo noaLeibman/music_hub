@@ -154,10 +154,10 @@ const App = () => {
     setCreateProject(open);
   };
   const acceptFile = (files: any, e:any) =>{
-    console.log(files)
-    const image_url_upload = URL.createObjectURL(files[0])
-    setCreateProjectImageFile(files[0])
-    setCreateProjectImage(image_url_upload)
+    console.log(files[0]);
+    const image_url_upload = URL.createObjectURL(files[0]);
+    setCreateProjectImageFile(files[0]);
+    setCreateProjectImage(image_url_upload);
     
 
   }
@@ -330,7 +330,8 @@ const App = () => {
 
       const project_id = data.uuid
       if(createProjectImageFile){
-        const puturl = await axios.get(baseUrl + 'project/presigned_put_url?project_id='+project_id+'&filename=project_preview&content='+createProjectImageFile.type,
+        console.log(createProjectImageFile);
+        const puturl = await axios.get(baseUrl + 'project/presigned_put_url?project_id='+project_id+'&filename=project_preview.jpeg&content='+createProjectImageFile.type,
         {withCredentials: true})        
       
         axios.put(puturl.data, createProjectImageFile, {headers: {'Content-Type': createProjectImageFile.type}})

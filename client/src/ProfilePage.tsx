@@ -61,7 +61,7 @@ const ProfilePage: React.FC<Props> = (props) => {
       setAlreadyGotProjects(true);
       axios.get(baseUrl + 'users/project?mail=' + props.email, options
       ).then(userProjectsData => {
-        // console.log(userProjectsData.data);
+        console.log(userProjectsData.data);
         const projectsList: ProjectDetails[] = JSON.parse(userProjectsData.data).map((project: any) => {
           // let image;
           // if (userProjectsData.data.image_url[0]) {
@@ -97,7 +97,9 @@ const ProfilePage: React.FC<Props> = (props) => {
   const getProjectListItems = () => {
     return projects.map((project: ProjectDetails) => 
       <ListItem button key={project.uuid} onClick={() => props.openEditor(project.uuid)}>
-        <QueueMusicIcon style={{margin: '10px'}}/>
+        {project.image ?
+          <img src={project.image}></img>
+          : <QueueMusicIcon style={{margin: '10px'}}/>}
         <ListItemText primary={project.name} secondary={project.description} />
         <ListItemSecondaryAction>
           <IconButton edge="end" onClick={() => deleteProject(project.uuid)}>
