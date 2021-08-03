@@ -216,7 +216,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     return (
       <Card variant="outlined">
           <Grid container>
-            <Grid item xs={1} style={{position: 'relative'}}>
+            <Grid item xs={1} style={{position: 'relative', marginLeft: '20px'}}>
                 {renderControls()}
                 <Popover
                     anchorEl={sliceRef.current}
@@ -239,7 +239,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                     <MenuItem onClick={() => props.addEffect('tremolo', tremoloValue, props.id)}>Tremolo</MenuItem>
                 </Menu>
             </Grid>
-            <Grid item xs={10} ref={zoomRef}>
+            <Grid item xs={10} ref={zoomRef} style={{marginLeft: '20px'}}>
                 <div {...getRootProps({className: 'dropzone', style: baseStyle})}>
                     <input {...getInputProps()} />
                     <p>Drag and drop a file here, or click to select file</p>

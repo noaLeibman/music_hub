@@ -1,7 +1,8 @@
-import { Card, CardContent, Grid, List, ListItem, ListItemText, makeStyles, Paper, Typography } from "@material-ui/core";
+import { Card, CardContent, Grid, IconButton, List, ListItem, ListItemSecondaryAction, ListItemText, makeStyles, Paper, Typography } from "@material-ui/core";
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import MusicNoteIcon from '@material-ui/icons/MusicNote';
 import QueueMusicIcon from '@material-ui/icons/QueueMusic';
+import DeleteIcon from '@material-ui/icons/Delete';
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import waveImg from './images/wave.png';
@@ -42,6 +43,13 @@ const useStyles = makeStyles({
   }
 });
 
+const options = {
+  withCredentials :true,
+  headers: {
+  'Access-Control-Allow-Credentials':'true'
+  }
+};
+
 const ProfilePage: React.FC<Props> = (props) => {
   const [projects, setProjects] = useState<ProjectDetails[]>([]);
   const [alreadyGotProjects, setAlreadyGotProjects] = useState<boolean>(false); 
@@ -50,15 +58,9 @@ const ProfilePage: React.FC<Props> = (props) => {
   useEffect(() => {
     if (!alreadyGotProjects && props.email !== "") {
       setAlreadyGotProjects(true);
-      const options = {
-        withCredentials :true,
-        headers: {
-        'Access-Control-Allow-Credentials':'true'
-        }
-      };
       axios.get(baseUrl + 'users/project?mail=' + props.email, options
       ).then(userProjectsData => {
-        console.log(userProjectsData.data);
+        // console.log(userProjectsData.data);
         const projectsList: ProjectDetails[] = JSON.parse(userProjectsData.data).map((project: any) => {
           return {
             name: project.project_name,
@@ -72,12 +74,30 @@ const ProfilePage: React.FC<Props> = (props) => {
       });
     }
   }, [projects, alreadyGotProjects, props.email]);
+
+  const deleteProject = (uuid: string) => {
+    axios.post(baseUrl + 'project/delete?project_id=' + uuid, options)
+    .then(userProjectsData => {
+      // console.log(userProjectsData);
+      let projectsList = [...projects];
+      const idx = projectsList.findIndex(project => project.uuid === uuid);
+      projectsList.splice(idx, 1);
+      setProjects(projectsList);
+    }).catch(error => {
+      console.log(error);
+    });
+  }
   
   const getProjectListItems = () => {
     return projects.map((project: ProjectDetails) => 
       <ListItem button key={project.uuid} onClick={() => props.openEditor(project.uuid)}>
         <QueueMusicIcon style={{margin: '10px'}}/>
         <ListItemText primary={project.name} secondary={project.description} />
+        <ListItemSecondaryAction>
+          <IconButton edge="end" onClick={() => deleteProject(project.uuid)}>
+            <DeleteIcon />
+          </IconButton>
+        </ListItemSecondaryAction>
       </ListItem>
     );
   }

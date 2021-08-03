@@ -17,14 +17,14 @@ const MainFeed: React.FC = () => {
     };
     axios.get(baseUrl + 'project/recent', options
     ).then(projectPreviewData => {
-      console.log(projectPreviewData);
+      // console.log(projectPreviewData);
       setProjects(JSON.parse(projectPreviewData.data))
       setIsSet(true)
     }).catch(e => console.log(e));
   }
 
   useEffect(() => {
-    console.log(isSet);
+    // console.log(isSet);
     if (!isSet){
       getRecentProjects()
     }

@@ -53,6 +53,7 @@ const Editor: React.FC<Props> = (props) => {
   const [recorder, setRecorder] = useState<Recorder>();
   const [userMic, setUserMic] = useState<UserMedia>();
   const [projectRetrieved, setProjectRetrieved] = useState<boolean>(false);
+  const [deletedTracks, setDeletedTracks] = useState<{id: string, type: string}[]>([]);
 
   const classes = useStyles();
 
@@ -74,10 +75,10 @@ const Editor: React.FC<Props> = (props) => {
 
   useEffect(() => {
       return function cleanSynths() {
-        console.log('cleaning up synths');
+        // console.log('cleaning up synths');
         Tone.Transport.cancel();
         Array.from(synthTracks.values()).forEach((track: STData) => {
-          console.log('clean');
+          // console.log('clean');
           track.synth.disconnect(Tone.getDestination());
           track.synth.unsync();
           track.synth.dispose();
@@ -96,7 +97,7 @@ const Editor: React.FC<Props> = (props) => {
     };
     axios.get(baseUrl + 'project/presigned_get_url?project_id=' + props.projectId, options)
     .then(projectData => {
-      console.log(projectData);
+      // console.log(projectData);
       setProjectSaved(true);
       createFromJson(JSON.parse(projectData.data));
     }).catch(error => {
@@ -106,7 +107,7 @@ const Editor: React.FC<Props> = (props) => {
 
   useEffect(() => {
     if (!newProject && !projectRetrieved) {
-      console.log('getting project');
+      // console.log('getting project');
       setProjectRetrieved(true);
       getProject();
     }
@@ -272,7 +273,7 @@ const Editor: React.FC<Props> = (props) => {
       toConnect = Effects.getReverb(value);
       toDisconnect = trackData.effects.reverb.node;
       trackData.effects.reverb.node = toConnect;
-      console.log(toDisconnect);
+      // console.log(toDisconnect);
     } else if (effect === 'distortion') {
       if (!trackData.effects.distortion.on) {
         trackData.effects.distortion.on = true;
@@ -304,7 +305,7 @@ const Editor: React.FC<Props> = (props) => {
       toDisconnect = trackData.effects.tremolo.node;
       trackData.effects.tremolo.node = toConnect;
     }
-    console.log('disconnecting: ' + toDisconnect + ', connecting: ' + toConnect);
+    // console.log('disconnecting: ' + toDisconnect + ', connecting: ' + toConnect);
     if (toDisconnect !== undefined) disconnectEffect(toDisconnect, id);
     if (toConnect !== undefined) connectEffect(toConnect, id);
     setAudioTracks((new Map(audioTracks)).set(id, trackData));
@@ -343,6 +344,7 @@ const Editor: React.FC<Props> = (props) => {
       map.delete(id);
       setAudioTracks(map);
     }
+    setDeletedTracks([...deletedTracks, {id: id, type: type}]);
   }
 
   const setTracksInMap = (tracksData: {url: string; id: string;}[], map: Map<string, AudioTrackData>, type: string ) => {
@@ -379,7 +381,7 @@ const Editor: React.FC<Props> = (props) => {
     setTracksInMap(projectUrls.uploaded, audioTracksMap, 'uploaded');
     if (projectUrls.json.length) {
       const projectJson = (await axios.get(projectUrls.json[0])).data;
-      console.log(projectJson);
+      // console.log(projectJson);
       let synthTracksMap = new Map();
       projectJson.synthTracks?.forEach((trackData: any) => {
         // console.log(data);
@@ -426,7 +428,7 @@ const Editor: React.FC<Props> = (props) => {
       baseUrl + 'project/presigned_put_url/?project_id=' + props.projectId + "&filename=project.json&content=" + jsonType,
       options
     );
-    console.log(presignedData);
+    // console.log(presignedData);
     function replacer(key: any, value: any) {
       if (key === 'synth') return undefined;
       else if (value instanceof Map) {
@@ -460,6 +462,17 @@ const Editor: React.FC<Props> = (props) => {
     }).catch(function (error) {
       console.log(error);
     });
+    let files =  deletedTracks.map((track) => {
+      return {
+        'file_name': track.type + "_" + track.id
+      }
+    });
+    let deletedTracksJson = {
+      files: files,
+    }
+    // console.log(deletedTracksJson);
+    axios.post(baseUrl + 'project/delete_files/?project_id=' + props.projectId, deletedTracksJson, options)
+    .catch(e => console.log(e));
     props.setProjectSaved(true);
   }
 
