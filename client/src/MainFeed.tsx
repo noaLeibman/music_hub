@@ -3,10 +3,14 @@ import React, { useEffect, useState } from "react";
 import axios from 'axios';
 import backImg from './images/feedBack.png';
 import { baseUrl } from './App';
+import { Snackbar } from '@material-ui/core';
+import { Alert } from '@material-ui/lab';
 
 const MainFeed: React.FC = () => {
   const [projects, setProjects] = useState<ProjectProps[]>([]);
   const [isSet, setIsSet] = useState<Boolean>(false);
+  const [alertOpen, setAlertOpen] = useState<boolean>(true);
+  const [successAlertOpen, setSuccessAlertOpen] = useState<boolean>(false);
 
   const getRecentProjects= () => {
     const options = {
@@ -24,6 +28,8 @@ const MainFeed: React.FC = () => {
         return value;
       });
       console.log(projectsData);
+      setAlertOpen(false);
+      setSuccessAlertOpen(true);
       setProjects(projectsData);
     }).catch(e => console.log(e));
   }
@@ -44,8 +50,26 @@ const MainFeed: React.FC = () => {
       backgroundSize: 'cover',
       overflow: 'auto',
       }}>
+        <Snackbar 
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          open={alertOpen}
+          autoHideDuration={6000}
+          style={{minWidth: '20%'}}>
+          <Alert severity="info">
+            Getting recent projects...
+          </Alert>
+        </Snackbar>
+        <Snackbar 
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          autoHideDuration={2000}
+          open={successAlertOpen}
+          onClose={() => setSuccessAlertOpen(false)}>
+          <Alert severity="success">
+            Recent projects ready!
+          </Alert>
+      </Snackbar>
         {projects.map((project, index) => {
-          return <div style={{margin: '5%'}}>
+          return <div style={{margin: '5%'}} key={index}>
             <ProjectCard {...project} key={index}/>
           </div>
         })}

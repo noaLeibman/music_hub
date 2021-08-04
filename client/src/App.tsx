@@ -5,9 +5,8 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
-import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse, makeStyles, MenuList} from '@material-ui/core';
+import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse, makeStyles } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
-import SearchBar from "material-ui-search-bar";
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import DnsIcon from '@material-ui/icons/Dns';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
@@ -41,6 +40,10 @@ const dropzoneStyle = {
 const useStyles = makeStyles({
   popover: {
       padding: '20px'
+  },
+  toolBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
   }
 });
 
@@ -55,7 +58,6 @@ const App = () => {
   const classes = useStyles();  
   const {Main, Profile, Create} = MenuItems;
   const [selectedPage, setSelectedPage] = useState<string>(Main);
-  const [searchText, setSearchText] = useState<string>("");
   const [menuState, setMenuState] = useState<boolean>(false);
   const [loginButton, setLoginButton] = useState<boolean>(false);
   const [signupButton, setSignupButton] = useState<boolean>(false);
@@ -81,7 +83,6 @@ const App = () => {
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
-  const searchSite = (text: string) => {};
 
   useEffect(() => {
     if (!isSet){
@@ -365,8 +366,9 @@ const App = () => {
     return res.data.email;
   }
 
-  const openEditorOnProject = (uuid: string) => {
+  const openEditorOnProject = (uuid: string, name: string) => {
     setCurrProjectId(uuid);
+    setProjectName(name);
     setNewProjectFlag(false);
     setSelectedPage(Create);
   }
@@ -376,31 +378,25 @@ const App = () => {
         {getMenuDrawer()}
         <AppBar position="static" color='primary'>
           <Toolbar>
-          <IconButton
-            edge="start" 
-            className="menu-button" 
-            color="inherit" 
-            aria-label="menu" 
-            onClick={toggleDrawer(true)}
-            >
-            <MenuIcon />
-          </IconButton>
+            <IconButton
+              edge="start" 
+              className="menu-button" 
+              color="inherit" 
+              aria-label="menu" 
+              onClick={toggleDrawer(true)}
+              >
+              <MenuIcon />
+            </IconButton>
             <Typography variant="h4" className="title" align='left' style={{flexGrow: 1}}>
               The Music Hub
             </Typography>
-            <SearchBar
-              value={searchText}
-              onChange={(newValue) => setSearchText(newValue)}
-              onRequestSearch={() => searchSite(searchText)}
-              style={{marginRight: '70px'}}
-            />
             {userName === "" && 
-              <Button color="inherit" style={{marginLeft: '10px'}} ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
+              <Button color="inherit" ref={signupRef} onClick={()=>setSignupButton(!signupButton)}>Signup</Button>
             }
-            <Box fontSize={14} style={{marginLeft: '15px'}}>
-              {userName ? 'Welcome, ' + userName : undefined}
-            </Box>
-            <Button color="inherit" style={{marginLeft: '10px'}} ref={loginRef} onClick={()=>checkLoginLogout()}>
+            {userName && <Box fontSize={16} style={{ marginBottom: '5px', flexGrow: 1}}>
+              {'Welcome, ' + userName}
+            </Box>}
+            <Button color="inherit" ref={loginRef} onClick={()=>checkLoginLogout()}>
               {userName ? "logout" : "login"}
             </Button>
             <Popover
@@ -457,7 +453,7 @@ const App = () => {
                           <p>Drag and drop a file here, or click to select file</p>
                         </div> 
                       </Box>
-                      : <img src = {createProjectImage} style={{maxWidth: '300px'}}/>
+                      : <img src={createProjectImage} alt="" style={{maxWidth: '300px'}}/>
                       }
                       <Button onClick={createProjectThenSet}>Apply</Button>
                     </Box>  
@@ -466,15 +462,15 @@ const App = () => {
               <Alert
                 action={
                 <IconButton
-              aria-label="close"
-              color="primary"
-              size="small"
-              onClick={() => {
-              setCollapseOpen(false);
-            }}>
-              <CloseIcon/>
-          </IconButton>}
-            >Please log in using your new credentials</Alert>
+                  aria-label="close"
+                  color="primary"
+                  size="small"
+                  onClick={() => {
+                  setCollapseOpen(false);
+                }}>
+                    <CloseIcon/>
+                </IconButton>}
+              >Please log in using your new credentials</Alert>
             </Collapse>
           </Toolbar>
         </AppBar>
@@ -484,6 +480,7 @@ const App = () => {
         { selectedPage === Create && 
           <Editor
             projectId={currProjectId}
+            projectName={projectname}
             newProject={newProjectFlag}
             projectSaved={projectSaved}
             setProjectSaved={setProjectSaved}

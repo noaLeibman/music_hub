@@ -104,14 +104,6 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }, [props, playerLoaded, trackInfoApplied, reverbValue, tremoloValue, distortionValue]);
 
-    // useEffect(() => {
-    //     try {
-    //       props.player?.peaks?.views.getView('zoomview')?.setZoom({seconds: props.tracksLength});  
-    //     } catch (e) {
-    //         console.log(e);
-    //     }
-    // }, [props.tracksLength, props.player]);
-
     const startRecording = () => {
         const recorder = props.recorder?.get();
         if (!recorder) return;

@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, makeStyles } from '@material-ui/core';
+import { Box, Button, ButtonGroup, makeStyles, Snackbar } from '@material-ui/core';
 import { PlayArrow } from '@material-ui/icons';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
@@ -14,8 +14,19 @@ import {ChordData, STData, AudioTrackData, ProjectUrls, TrackInfo} from './Types
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import {baseUrl} from '../App';
+import { Alert } from "@material-ui/lab";
+import backImg from '../images/feedBack.png';
 
 const useStyles = makeStyles({
+  box: {
+    minHeight: '700px',
+    backgroundImage: "url(" + backImg + ")",
+    backgroundAttachment: 'fixed',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover',
+    overflow: 'auto',
+  },
   root: {
     boxShadow: '0 3px 5px 2px #a7abb0',
     padding: '10px',
@@ -24,6 +35,7 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     width: '120px',
+    backgroundColor: 'white',
   },
   tracksContainer: {
     boxShadow: '0 3px 5px 2px #a7abb0',
@@ -33,14 +45,19 @@ const useStyles = makeStyles({
     marginLeft: '165px',
     display: 'flex',
     flexDirection: 'column',
+    backgroundColor: 'white',
   },
   button: {
     margin: '5px'
   },
+  orangeButton: {
+    backgroundColor: '#eb9875',
+  }
 });
 
 type Props = {
   projectId: string;
+  projectName: string;
   newProject: boolean;
   projectSaved: boolean;
   setProjectSaved: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,6 +71,10 @@ const Editor: React.FC<Props> = (props) => {
   const [userMic, setUserMic] = useState<UserMedia>();
   const [projectRetrieved, setProjectRetrieved] = useState<boolean>(false);
   const [deletedTracks, setDeletedTracks] = useState<{id: string, type: string}[]>([]);
+  const [saveAlertOpen, setSaveAlertOpen] = useState<boolean>(false);
+  const [saveSuccessOpen, setSaveSuccessOpen] = useState<boolean>(false);
+  const [getAlertOpen, setGetAlertOpen] = useState<boolean>(false);
+  const [getSuccessOpen, setGetSuccessOpen] = useState<boolean>(false);
 
   const classes = useStyles();
 
@@ -89,6 +110,7 @@ const Editor: React.FC<Props> = (props) => {
   const {newProject, setProjectSaved, projectSaved} = props;
 
   const getProject = useCallback(() => {
+    setGetAlertOpen(true);
     const options = {
       withCredentials :true,
       headers: {
@@ -172,7 +194,7 @@ const Editor: React.FC<Props> = (props) => {
 
   const stop = () => {
     Tone.Transport.stop();
-    Tone.Transport.seconds = 0;
+    // Tone.Transport.seconds = 0;
   }
 
   const setSTLength = (length: number, id: string) => {
@@ -182,6 +204,9 @@ const Editor: React.FC<Props> = (props) => {
       return;
     }
     track.length = length
+    if (length > longestTrack) {
+      setLongestTrack(length);
+    }
     setSynthTracks((new Map(synthTracks)).set(id, track));
   }
 
@@ -376,12 +401,13 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const createFromJson = async (projectUrls: ProjectUrls) => {
+    console.log(projectUrls);
     let audioTracksMap = new Map();
     setTracksInMap(projectUrls.recorded, audioTracksMap, 'recorded');
     setTracksInMap(projectUrls.uploaded, audioTracksMap, 'uploaded');
     if (projectUrls.json.length) {
       const projectJson = (await axios.get(projectUrls.json[0])).data;
-      // console.log(projectJson);
+      console.log(projectJson);
       let synthTracksMap = new Map();
       projectJson.synthTracks?.forEach((trackData: any) => {
         // console.log(data);
@@ -405,7 +431,7 @@ const Editor: React.FC<Props> = (props) => {
         }
         synthTracksMap.set(trackData.id, track);
       });
-      projectJson.audioTracks.forEach((trackInfo: any) => {
+      projectJson.audioTracks?.forEach((trackInfo: any) => {
         let track: AudioTrackData = audioTracksMap.get(trackInfo.trackId);
         if (!track) return;
         track.trackInfo = trackInfo;
@@ -413,9 +439,12 @@ const Editor: React.FC<Props> = (props) => {
       setSynthTracks(synthTracksMap);
     }
     setAudioTracks(audioTracksMap);
+    setGetAlertOpen(false);
+    setGetSuccessOpen(true);
   }
 
   const saveProject = async () => {
+    setSaveAlertOpen(true);
     sendAudioTracks();
     const options = {
       withCredentials :true,
@@ -471,8 +500,10 @@ const Editor: React.FC<Props> = (props) => {
       files: files,
     }
     // console.log(deletedTracksJson);
-    axios.post(baseUrl + 'project/delete_files/?project_id=' + props.projectId, deletedTracksJson, options)
+    if (deleteTrack.length > 0) axios.post(baseUrl + 'project/delete_files/?project_id=' + props.projectId, deletedTracksJson, options)
     .catch(e => console.log(e));
+    setSaveAlertOpen(false);
+    setSaveSuccessOpen(true);
     props.setProjectSaved(true);
   }
 
@@ -503,8 +534,69 @@ const Editor: React.FC<Props> = (props) => {
     })
   }
 
+  const recordProject = async () => {
+    console.log(longestTrack);
+    let toneRecorder = new Tone.Recorder();
+    try {
+      Tone.getDestination().connect(toneRecorder);
+      toneRecorder.start();
+      Tone.Transport.start();
+      setTimeout(async () => {
+        Tone.Transport.stop();
+        const recording = await toneRecorder.stop();
+        const url = URL.createObjectURL(recording);
+        const anchor = document.createElement("a");
+        anchor.download = props.projectName + ".webm";
+        anchor.href = url;
+        anchor.click();
+      }, (longestTrack * 1000) + 500);
+      } catch(e) {
+        console.log(e);
+      }
+  }
+
+  const getSnackBars = () => {
+    return <div>
+      <Snackbar 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={saveAlertOpen}
+        autoHideDuration={6000}>
+        <Alert severity="info">
+          Saving your projects (might take a few seconds)...
+        </Alert>
+      </Snackbar>
+      <Snackbar 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        autoHideDuration={2000}
+        open={saveSuccessOpen}
+        onClose={() => setSaveSuccessOpen(false)}>
+        <Alert severity="success">
+          Project saved!
+        </Alert>
+      </Snackbar>
+      <Snackbar 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={getAlertOpen}
+        autoHideDuration={6000}>
+        <Alert severity="info">
+          Getting your project (might take a few seconds)...
+        </Alert>
+      </Snackbar>
+      <Snackbar 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        autoHideDuration={2000}
+        open={getSuccessOpen}
+        onClose={() => setGetSuccessOpen(false)}>
+        <Alert severity="success">
+          Project ready!
+        </Alert>
+      </Snackbar>
+    </div>
+  }
+
   return (
-    <Box>
+    <Box className={classes.box}>
+      {getSnackBars()}
       <div style={{width: '120px', float: 'left'}}>
         <Metronome/>
         <Box className={classes.root}>
@@ -527,6 +619,8 @@ const Editor: React.FC<Props> = (props) => {
             onClick={() => addAudioTrack('uploaded')}>Add track for uploading</Button>
           <Button className={classes.button} color='primary' variant='contained' size='small' 
             onClick={saveProject}>Save Project</Button>
+          <Button className={classes.button} color='primary' variant='contained' size='small' 
+            onClick={recordProject}>Download project to file</Button>
         </Box>
       </div>
       {(audioTracks.size !==0 || synthTracks.size !== 0) && 
@@ -560,6 +654,8 @@ const Editor: React.FC<Props> = (props) => {
               setFile={setAudioTrackFile}
               trackInfo={data.trackInfo}
               key={id}
+              longestTrack={longestTrack}
+              setLongestTrack={handleLongestTrack}
             />;
             return track;
           })}

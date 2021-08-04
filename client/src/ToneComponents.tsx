@@ -111,13 +111,13 @@ class PeaksPlayer {
         }
       });
     } else {
-      this.peaks.setSource({webAudio: {audioBuffer: this.player.externalPlayer.buffer.get()}}, (err) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log('peaks.setSource succeeded');
-        }
-      });
+      // this.peaks.setSource({webAudio: {audioBuffer: this.player.externalPlayer.buffer.get()}}, (err) => {
+      //   if (err) {
+      //     console.log(err);
+      //   } else {
+      //     console.log('peaks.setSource succeeded');
+      //   }
+      // });
     }
     
   }

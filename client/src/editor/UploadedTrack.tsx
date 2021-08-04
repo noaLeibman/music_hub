@@ -1,5 +1,5 @@
 import {  useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles } from '@material-ui/core';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles, Snackbar } from '@material-ui/core';
 import { PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
@@ -7,12 +7,15 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import React from 'react';
 import {useDropzone} from 'react-dropzone';
 import { EffectsData, TrackInfo } from './Types';
+import { Alert } from '@material-ui/lab';
 
 type Props = {
     id: string;
     player: PeaksPlayer;
     url: string | undefined;
     effects: EffectsData;
+    longestTrack: number;
+    setLongestTrack: (value: number) => void;
     deleteTrack: (id: string, type: string) => void;
     addEffect: (effect: string, value: number, id: string) => void;
     slice: (sliceFrom: number, sliceTo: number, id: string) => void;
@@ -58,6 +61,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     const [distortionValue, setDistortionValue] = useState<number>(0);
     const [tremoloValue, setTremoloValue] = useState<number>(0);
     const [trackInfoApplied, setTrackInfoApplied] = useState<boolean>(false);
+    const [alertOpen, setAlertOpen] = useState<boolean>(false);
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
@@ -97,14 +101,23 @@ const UploadedTrack: React.FC<Props> =  (props) => {
 
     const acceptFile = (files: any, e: any) => {
         console.log(files);
+        if (!files[0]) {
+            setAlertOpen(true);
+            return;
+        }
         const url = URL.createObjectURL(files[0]);
         console.log(url);
-        props.player.load(url, zoomRef, overviewRef);
+        props.player.load(url, zoomRef, overviewRef).then(() => {
+            let dur = props.player.player?.getDuration();
+            if (dur && dur > props.longestTrack) {
+                props.setLongestTrack(dur);
+            }
+        });
         props.setFile(files[0], props.id);
     }
 
     const {getRootProps, getInputProps} = useDropzone({
-        accept: 'audio/*',
+        accept: 'audio/mpeg',
         onDrop: acceptFile,
         maxFiles: 1,
     });
@@ -134,6 +147,15 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     const renderControls = () => {
         return (
             <Box display="flex" flexDirection="column" alignItems="center">
+                <Snackbar 
+                    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                    open={alertOpen}
+                    autoHideDuration={2000}
+                    onClose={() => setAlertOpen(false)}>
+                    <Alert severity="error">
+                        Only .mp3 files are accepted
+                    </Alert>
+                </Snackbar>
                 <ButtonGroup size="small" style={{marginTop: '10px', marginBottom: '10px'}}>
                     <Tooltip
                         title="Add Effect"
@@ -242,7 +264,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
             <Grid item xs={10} ref={zoomRef} style={{marginLeft: '20px'}}>
                 <div {...getRootProps({className: 'dropzone', style: baseStyle})}>
                     <input {...getInputProps()} />
-                    <p>Drag and drop a file here, or click to select file</p>
+                    <p>Drag and drop a file here (only mp3 format), or click to select file</p>
                 </div>
             </Grid>
           </Grid>

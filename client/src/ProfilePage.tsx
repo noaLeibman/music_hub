@@ -1,4 +1,5 @@
-import { Card, CardContent, Grid, IconButton, List, ListItem, ListItemSecondaryAction, ListItemText, makeStyles, Paper, Typography } from "@material-ui/core";
+import { Avatar, Card, CardContent, Grid, IconButton, List, ListItem, ListItemAvatar,
+  ListItemSecondaryAction, ListItemText, makeStyles, Paper, Snackbar, Typography } from "@material-ui/core";
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import MusicNoteIcon from '@material-ui/icons/MusicNote';
 import QueueMusicIcon from '@material-ui/icons/QueueMusic';
@@ -7,6 +8,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import waveImg from './images/wave.png';
 import {baseUrl} from './App';
+import { Alert } from "@material-ui/lab";
 
 type ProjectDetails = {
   name: string;
@@ -19,7 +21,7 @@ type ProjectDetails = {
 type Props = {
     userName: string;
     email: string;
-    openEditor: (uuid: string) => void;
+    openEditor: (uuid: string, name: string) => void;
 }
 
 const useStyles = makeStyles({
@@ -55,6 +57,8 @@ const options = {
 const ProfilePage: React.FC<Props> = (props) => {
   const [projects, setProjects] = useState<ProjectDetails[]>([]);
   const [alreadyGotProjects, setAlreadyGotProjects] = useState<boolean>(false); 
+  const [alertOpen, setAlertOpen] = useState<boolean>(true);
+  const [successAlertOpen, setSuccessAlertOpen] = useState<boolean>(false);
   const classes = useStyles();
 
   useEffect(() => {
@@ -69,13 +73,12 @@ const ProfilePage: React.FC<Props> = (props) => {
             description: project.description,
             uuid: project.project_id,
             image: undefined,
-            imageGetUrl: project.image_url !== [] ? project.image_url : undefined,
+            imageGetUrl: typeof project.image_url === 'object' ? undefined : project.image_url,
           }
         });
         console.log(projectsList);
-        // await Promise.all(projectsList.map(async (project) => {
-        //   if (project.imageGetUrl) project.image = await axios.get(project.imageGetUrl, options);
-        // }));
+        setAlertOpen(false);
+        setSuccessAlertOpen(true);
         setProjects(projectsList);
       }).catch(error => {
         console.log(error);
@@ -98,10 +101,16 @@ const ProfilePage: React.FC<Props> = (props) => {
   
   const getProjectListItems = () => {
     return projects.map((project: ProjectDetails) => 
-      <ListItem button key={project.uuid} onClick={() => props.openEditor(project.uuid)}>
-        {project.image ?
-          <img src={project.image}></img>
-          : <QueueMusicIcon style={{margin: '10px'}}/>}
+      <ListItem button key={project.uuid} onClick={() => props.openEditor(project.uuid, project.name)}>
+        {project.imageGetUrl ?
+          <ListItemAvatar>
+            <Avatar alt={project.uuid} src={project.imageGetUrl} />
+          </ListItemAvatar>
+          : <ListItemAvatar>
+              <Avatar>
+                <QueueMusicIcon style={{margin: '10px'}}/>
+              </Avatar>
+            </ListItemAvatar>}
         <ListItemText primary={project.name} secondary={project.description} />
         <ListItemSecondaryAction>
           <IconButton edge="end" onClick={() => deleteProject(project.uuid)}>
@@ -114,6 +123,24 @@ const ProfilePage: React.FC<Props> = (props) => {
 
   return (
     <div>
+      <Snackbar 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={alertOpen}
+        autoHideDuration={6000}
+        style={{minWidth: '20%'}}>
+        <Alert severity="info">
+          Getting your projects...
+        </Alert>
+      </Snackbar>
+      <Snackbar 
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          autoHideDuration={2000}
+          open={successAlertOpen}
+          onClose={() => setSuccessAlertOpen(false)}>
+          <Alert severity="success">
+            Projects ready!
+          </Alert>
+      </Snackbar>
       {(props.userName && props.email) ? <Grid container className={classes.grid} spacing={2}>
       <Grid item xs={1}></Grid>
         <Grid item xs={4}>

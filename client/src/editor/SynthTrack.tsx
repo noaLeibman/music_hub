@@ -65,7 +65,7 @@ const SynthTrack: React.FC<Props> = (props) => {
 
     const addChord = () => {
         const {id, synth, activeChords, chordsOrder, setActiveChords, setChordsOrder} = props;
-        if (duration === '0') {
+        if (duration === '0' || duration === "") {
             setChordMenuOpen(false);
             return;
         }

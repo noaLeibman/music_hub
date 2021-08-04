@@ -18,6 +18,7 @@ const useStyles = makeStyles({
         marginTop: '10px',
         display: 'flex',
         flexDirection: 'column',
+        backgroundColor: 'white',
     },
     button: {
         margin: '5px'
@@ -29,6 +30,7 @@ const Metronome: React.FC = () => {
     const [beatsPerBar, setBeatsPerBar] = useState<number>(4);
     const [loop, setLoop] = useState<Tone.Loop>();
     const [sampler, setSampler] = useState<Tone.Sampler>();
+    const [mute, setMute] = useState<boolean>(false);
 
     const classes = useStyles();
 
@@ -63,12 +65,21 @@ const Metronome: React.FC = () => {
         }, '1m').start(0));
     }
 
+    const clickMute = () => {
+        if (loop) {
+            loop.mute = !loop.mute;
+            setMute(loop.mute);
+        }
+    }
+
     return (
         <Box className={classes.root}>
             <TextField label="BPM:" value={bpm} onChange={handleBpmChange}/>
             <TextField label="Beats per bar:" value={beatsPerBar} onChange={(e) => setBeatsPerBar(Number(e.target.value))}/>
             <Button className={classes.button} onClick={updateMetronome} color='secondary' variant='contained' size='small'>apply</Button>
-            <Button className={classes.button} onClick={() => loop?.dispose()} color='secondary' variant='contained' size='small'>mute</Button>
+            <Button className={classes.button} onClick={clickMute} color='secondary' variant='contained' size='small'>
+                {mute ? 'unmute' : 'mute'}
+            </Button>
         </Box>
     )
 }
