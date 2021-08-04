@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles } from '@material-ui/core';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles, IconButton } from '@material-ui/core';
 import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
 import PauseIcon from '@material-ui/icons/Pause';
 import StopIcon from '@material-ui/icons/Stop';
@@ -7,6 +7,7 @@ import { Recorder, UserMedia, PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
+import MicOffIcon from '@material-ui/icons/MicOff';
 import React from 'react';
 import { EffectsData, TrackInfo } from './Types'
 
@@ -46,6 +47,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     const [reverbValue, setReverbValue] = useState<number>(0);
     const [distortionValue, setDistortionValue] = useState<number>(0);
     const [tremoloValue, setTremoloValue] = useState<number>(0);
+    const [mute, setMute] = useState<boolean>(false);
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
@@ -69,14 +71,16 @@ const RecordedTrack: React.FC<Props> =  (props) => {
             }
             await userMic.open();
             userMic.connect(recorder);
-            if (props.url && needLoading) {
+            if (props.url && needLoading && !playerLoaded) {
                 console.log('loading url');
                 setNeedLoading(false);
-                await props.player?.load(props.url, zoomRef, overviewRef).then(() => setPlayerLoaded(true));
-                const length = props.player?.player?.getBuffer()?.duration;
-                if ( length && length > props.tracksLength) {
-                    props.setTracksLength(length);
-                }
+                props.player?.load(props.url, zoomRef, overviewRef).then(() => {
+                    const length = props.player?.player?.getBuffer()?.duration;
+                    if ( length && length > props.tracksLength) {
+                        props.setTracksLength(length);
+                    }
+                    setPlayerLoaded(true);
+                });
             }
         }  
       
@@ -180,6 +184,13 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         }
     }
 
+    const muteOrUnmute = () => {
+        if (props.player.player){
+            props.player.player.externalPlayer.mute = (!mute);
+            setMute(!mute);
+        }
+    }
+
     const renderControls = () => {
         return (
             <Box display="flex" flexDirection="column" alignItems="center">
@@ -194,7 +205,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         <StopIcon/>
                     </Button>
                 </ButtonGroup>
-                <ButtonGroup size="small" style={{marginTop: '10px', marginBottom: '10px'}}>
+                <ButtonGroup size="small" style={{marginTop: '10px'}}>
                     <Tooltip
                         title="Add Effect"
                         placement="top"
@@ -220,6 +231,14 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         </Button>
                     </Tooltip>
                 </ButtonGroup>
+                <Tooltip
+                    title={mute ? "unmute" : "mute"}
+                    placement="top"
+                >
+                    <IconButton edge="start" size="small" onClick={muteOrUnmute}>
+                        <MicOffIcon color={mute ? "primary" : "disabled"}/>
+                    </IconButton>
+                </Tooltip>
                 {props.effects.reverb.on && <Tooltip
                     title="Reverb"
                     placement="left"

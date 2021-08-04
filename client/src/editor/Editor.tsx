@@ -194,7 +194,7 @@ const Editor: React.FC<Props> = (props) => {
 
   const stop = () => {
     Tone.Transport.stop();
-    // Tone.Transport.seconds = 0;
+    Tone.Transport.seconds = 0;
   }
 
   const setSTLength = (length: number, id: string) => {
@@ -360,16 +360,19 @@ const Editor: React.FC<Props> = (props) => {
   }
 
   const deleteTrack = (id : string, type: string) => {
-    if (type === 'synth') {
-      let map = new Map(synthTracks);
-      map.delete(id);
-      setSynthTracks(map);
-    } else {
-      let map = new Map(audioTracks);
-      map.delete(id);
-      setAudioTracks(map);
+    if(window.confirm("Are you sure you want to delete this track?")) {
+      if (type === 'synth') {
+        let map = new Map(synthTracks);
+        map.get(id)?.synth.dispose();
+        map.delete(id);
+        setSynthTracks(map);
+      } else {
+        let map = new Map(audioTracks);
+        map.delete(id);
+        setAudioTracks(map);
+      }
+      setDeletedTracks([...deletedTracks, {id: id, type: type}]);
     }
-    setDeletedTracks([...deletedTracks, {id: id, type: type}]);
   }
 
   const setTracksInMap = (tracksData: {url: string; id: string;}[], map: Map<string, AudioTrackData>, type: string ) => {
@@ -500,7 +503,7 @@ const Editor: React.FC<Props> = (props) => {
       files: files,
     }
     // console.log(deletedTracksJson);
-    if (deleteTrack.length > 0) axios.post(baseUrl + 'project/delete_files/?project_id=' + props.projectId, deletedTracksJson, options)
+    if (deletedTracks.length > 0) axios.post(baseUrl + 'project/delete_files/?project_id=' + props.projectId, deletedTracksJson, options)
     .catch(e => console.log(e));
     setSaveAlertOpen(false);
     setSaveSuccessOpen(true);

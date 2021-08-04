@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import * as Tone from 'tone';
-import { Tooltip, Button, Card, Select, Grid, MenuItem, TextField, Popover, Box } from '@material-ui/core';
+import { Tooltip, Button, Card, Select, Grid, MenuItem, TextField, Popover, Box, IconButton } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
+import MicOffIcon from '@material-ui/icons/MicOff';
 import ChordView from "./ChordView";
 import { ChordData } from "./Types";
 import { v4 as uuidv4 } from 'uuid';
@@ -55,6 +56,8 @@ const SynthTrack: React.FC<Props> = (props) => {
     const [chord, setChord] = useState<string>("A");
     const [duration, setDuration] = useState<string>("0");
     const [chordMenuOpen, setChordMenuOpen] = useState<boolean>(false);
+    const [mute, setMute] = useState<boolean>(false);
+    const [lastVolume, setLastVolume] = useState<number>(0);
     const chordMenuRef = useRef(null);
     const widthRef = useRef<HTMLHeadingElement>(null);
 
@@ -205,10 +208,7 @@ const SynthTrack: React.FC<Props> = (props) => {
     }
 
     const deleteTrack = () => {
-        if(window.confirm("Detele this track?")) {
-            props.synth.dispose();
-            props.deleteTrack(props.id, 'synth');
-        }
+        props.deleteTrack(props.id, 'synth');
     }
 
     const getChordViews = () => {
@@ -237,20 +237,38 @@ const SynthTrack: React.FC<Props> = (props) => {
         })   
     }
 
+    const muteOrUnmute = () => {
+        if (mute) {
+            props.synth.volume.value = lastVolume;
+        } else {
+            setLastVolume(props.synth.volume.value);
+            props.synth.volume.value = -Infinity;
+        }
+        setMute(!mute);
+    }
+
     return(
         <Card variant="outlined">
           <Grid container>
-            <Grid item xs={1} style={{padding: '10px'}}>
-                <Button style={{margin: '10px'}} size='small' ref={chordMenuRef} onClick={() => setChordMenuOpen(true)} variant='outlined'>
+            <Grid item xs={1} style={{position: 'relative', marginLeft: '20px'}}>
+                <Button style={{margin: '5px'}} size='small' ref={chordMenuRef} onClick={() => setChordMenuOpen(true)} variant='outlined'>
                     add chord
                 </Button>
                 <Tooltip
                     title="Delete Track"
                     placement="top"
                 >
-                    <Button size='small' variant='outlined' onClick={() => deleteTrack()}>
+                    <Button size='small' variant='outlined' style={{marginBottom: '10px'}} onClick={() => deleteTrack()}>
                         <DeleteIcon />
                     </Button>
+                </Tooltip>
+                <Tooltip
+                    title={mute ? "unmute" : "mute"}
+                    placement="top"
+                >
+                    <IconButton edge="start" size="small" style={{marginBottom: '10px', marginLeft: '10px'}} onClick={muteOrUnmute}>
+                        <MicOffIcon color={mute ? "primary" : "disabled"}/>
+                    </IconButton>
                 </Tooltip>
                 <Popover
                     anchorEl={chordMenuRef.current}
@@ -271,7 +289,7 @@ const SynthTrack: React.FC<Props> = (props) => {
                     </Box>  
                 </Popover>
             </Grid>
-            <Grid item xs={11} ref={widthRef}>
+            <Grid item xs={10} ref={widthRef} style={{marginLeft: '20px'}}>
                 <div style={{display: 'flex', justifyContent: 'flex-start', height: '100px'}}>
                     {widthRef.current && getChordViews()}
                 </div>

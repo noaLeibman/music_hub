@@ -62,6 +62,7 @@ class PeaksPlayer {
   player: Player | undefined;
   options: any;
   loaded: boolean;
+  loadCalled: boolean;
 
   constructor() {
     // this.zoomRef = props.zoomRef;
@@ -71,9 +72,12 @@ class PeaksPlayer {
     this.peaks = undefined;
     this.player = undefined;
     this.loaded = false;
+    this.loadCalled = false;
   }
 
   async load(url: string, newZoomRef: any, newOverviewRef: any) {
+    if (this.loadCalled) return;
+    this.loadCalled = true;
     console.log('load start');
     if (!this.player) {
       this.player = new Player();
@@ -110,16 +114,7 @@ class PeaksPlayer {
           this.loaded = true;
         }
       });
-    } else {
-      // this.peaks.setSource({webAudio: {audioBuffer: this.player.externalPlayer.buffer.get()}}, (err) => {
-      //   if (err) {
-      //     console.log(err);
-      //   } else {
-      //     console.log('peaks.setSource succeeded');
-      //   }
-      // });
     }
-    
   }
 
   connect(node: Tone.ToneAudioNode) {

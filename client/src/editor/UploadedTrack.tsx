@@ -1,9 +1,10 @@
 import {  useEffect, useRef, useState } from 'react';
-import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles, Snackbar } from '@material-ui/core';
+import { Button, Card, ButtonGroup, Grid, Menu, MenuItem, TextField, Popover, Box, Tooltip, Slider, makeStyles, Snackbar, IconButton } from '@material-ui/core';
 import { PeaksPlayer } from '../ToneComponents';
 import FlareIcon from '@material-ui/icons/Flare';
 import CropIcon from '@material-ui/icons/Crop';
 import DeleteIcon from '@material-ui/icons/Delete';
+import MicOffIcon from '@material-ui/icons/MicOff';
 import React from 'react';
 import {useDropzone} from 'react-dropzone';
 import { EffectsData, TrackInfo } from './Types';
@@ -62,6 +63,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
     const [tremoloValue, setTremoloValue] = useState<number>(0);
     const [trackInfoApplied, setTrackInfoApplied] = useState<boolean>(false);
     const [alertOpen, setAlertOpen] = useState<boolean>(false);
+    const [mute, setMute] = useState<boolean>(false);
     const zoomRef = useRef(null);
     const overviewRef = useRef(null);
     const sliceRef = useRef(null);
@@ -144,6 +146,13 @@ const UploadedTrack: React.FC<Props> =  (props) => {
         }
     }
 
+    const muteOrUnmute = () => {
+        if (props.player.player){
+            props.player.player.externalPlayer.mute = (!mute);
+            setMute(!mute);
+        }
+    }
+
     const renderControls = () => {
         return (
             <Box display="flex" flexDirection="column" alignItems="center">
@@ -156,7 +165,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                         Only .mp3 files are accepted
                     </Alert>
                 </Snackbar>
-                <ButtonGroup size="small" style={{marginTop: '10px', marginBottom: '10px'}}>
+                <ButtonGroup size="small" style={{marginTop: '10px'}}>
                     <Tooltip
                         title="Add Effect"
                         placement="top"
@@ -182,6 +191,14 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                         </Button>
                     </Tooltip>
                 </ButtonGroup>
+                <Tooltip
+                    title={mute ? "unmute" : "mute"}
+                    placement="top"
+                >
+                    <IconButton edge="start" size="small" onClick={muteOrUnmute}>
+                        <MicOffIcon color={mute ? "primary" : "disabled"}/>
+                    </IconButton>
+                </Tooltip>
                 {props.effects.reverb.on && <Tooltip
                     title="Reverb"
                     placement="left"

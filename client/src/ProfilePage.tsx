@@ -59,6 +59,8 @@ const ProfilePage: React.FC<Props> = (props) => {
   const [alreadyGotProjects, setAlreadyGotProjects] = useState<boolean>(false); 
   const [alertOpen, setAlertOpen] = useState<boolean>(true);
   const [successAlertOpen, setSuccessAlertOpen] = useState<boolean>(false);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState<boolean>(false);
+  const [deleteSuccessAlertOpen, setDeleteSuccessAlertOpen] = useState<boolean>(false);
   const classes = useStyles();
 
   useEffect(() => {
@@ -87,16 +89,21 @@ const ProfilePage: React.FC<Props> = (props) => {
   }, [projects, alreadyGotProjects, props.email]);
 
   const deleteProject = (uuid: string) => {
-    axios.post(baseUrl + 'project/delete?project_id=' + uuid, options)
-    .then(userProjectsData => {
-      // console.log(userProjectsData);
-      let projectsList = [...projects];
-      const idx = projectsList.findIndex(project => project.uuid === uuid);
-      projectsList.splice(idx, 1);
-      setProjects(projectsList);
-    }).catch(error => {
-      console.log(error);
-    });
+    if(window.confirm("Are you sure you want to delete this project?")) {
+      setDeleteAlertOpen(true);
+      axios.post(baseUrl + 'project/delete?project_id=' + uuid, options)
+      .then(userProjectsData => {
+        // console.log(userProjectsData);
+        let projectsList = [...projects];
+        const idx = projectsList.findIndex(project => project.uuid === uuid);
+        projectsList.splice(idx, 1);
+        setDeleteAlertOpen(false);
+        setDeleteSuccessAlertOpen(true);
+        setProjects(projectsList);
+      }).catch(error => {
+        console.log(error);
+      });
+    }
   }
   
   const getProjectListItems = () => {
@@ -121,8 +128,8 @@ const ProfilePage: React.FC<Props> = (props) => {
     );
   }
 
-  return (
-    <div>
+  const getSnackBars = () => {
+    return <div>
       <Snackbar 
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         open={alertOpen}
@@ -141,6 +148,30 @@ const ProfilePage: React.FC<Props> = (props) => {
             Projects ready!
           </Alert>
       </Snackbar>
+      <Snackbar 
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={deleteAlertOpen}
+        autoHideDuration={6000}
+        style={{minWidth: '20%'}}>
+        <Alert severity="info">
+          Deleting project...
+        </Alert>
+      </Snackbar>
+      <Snackbar 
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          autoHideDuration={2000}
+          open={deleteSuccessAlertOpen}
+          onClose={() => setDeleteSuccessAlertOpen(false)}>
+          <Alert severity="success">
+            Project deleted
+          </Alert>
+      </Snackbar>
+    </div>
+  }
+
+  return (
+    <div>
+      {getSnackBars()}
       {(props.userName && props.email) ? <Grid container className={classes.grid} spacing={2}>
       <Grid item xs={1}></Grid>
         <Grid item xs={4}>
