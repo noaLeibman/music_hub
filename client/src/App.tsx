@@ -77,6 +77,7 @@ const App = () => {
   const [userEmail, setUserEmail] = useState<string>("");
   const [isSetAfterCookie, setIsSetAfterCookie] = useState<boolean>(false);
   const [newProjectFlag, setNewProjectFlag] = useState<boolean>(true);
+  const [viewOnlyMode, setViewOnlyMode] = useState<boolean>(false);
   const [projectSaved, setProjectSaved] = useState<boolean>(false);
   const [createProjectImage, setCreateProjectImage] = useState<string>("")
   const [createProjectImageFile, setCreateProjectImageFile] = useState<Blob>()
@@ -219,13 +220,7 @@ const App = () => {
   }
 
   const changeSelectedPage = (page: MenuItems) => {
-    if (selectedPage === Create && !projectSaved) {
-      if(window.confirm("Are you sure you want to leave? To save your changes click 'SAVE PROJECT' first")) {
-        setSelectedPage(page);
-      }
-    } else {
-      setSelectedPage(page);
-    }
+    setSelectedPage(page);
   }
   
   const getMenuDrawer = () => {
@@ -241,6 +236,7 @@ const App = () => {
             <ListItemText primary={MenuItems.Profile} />
           </ListItem>
           <ListItem button key={MenuItems.Create} onClick={() => {
+              setViewOnlyMode(false);
               setNewProjectFlag(true);
               setSelectedPage(MenuItems.Create);
               setCreateProject(true);
@@ -367,6 +363,15 @@ const App = () => {
   }
 
   const openEditorOnProject = (uuid: string, name: string) => {
+    setViewOnlyMode(false);
+    setCurrProjectId(uuid);
+    setProjectName(name);
+    setNewProjectFlag(false);
+    setSelectedPage(Create);
+  }
+
+  const openProjectViewOnly = (uuid: string, name: string) => {
+    setViewOnlyMode(true);
     setCurrProjectId(uuid);
     setProjectName(name);
     setNewProjectFlag(false);
@@ -475,7 +480,9 @@ const App = () => {
           </Toolbar>
         </AppBar>
         { selectedPage === Main && 
-          <MainFeed /> 
+          <MainFeed 
+            openProjectInEditor={openProjectViewOnly}
+          /> 
         }
         { selectedPage === Create && 
           <Editor
@@ -483,6 +490,7 @@ const App = () => {
             projectName={projectname}
             newProject={newProjectFlag}
             projectSaved={projectSaved}
+            viewOnly={viewOnlyMode}
             setProjectSaved={setProjectSaved}
           />  
         }

@@ -22,6 +22,7 @@ type Props = {
     slice: (sliceFrom: number, sliceTo: number, id: string) => void;
     setFile: (file: Blob, id: string) => void;
     trackInfo: TrackInfo | undefined;
+    viewOnly: boolean;
 }
 
 const baseStyle = {
@@ -170,7 +171,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                         title="Add Effect"
                         placement="top"
                     >
-                        <Button onClick={handleClick} size="small" variant="outlined">
+                        <Button disabled={props.viewOnly} onClick={handleClick} size="small" variant="outlined">
                             <FlareIcon/>
                         </Button>
                     </Tooltip>
@@ -178,7 +179,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                         title="Slice"
                         placement="top"
                     >
-                        <Button ref={sliceRef} onClick={() => setSlice(!slice)}>
+                        <Button disabled={props.viewOnly} ref={sliceRef} onClick={() => setSlice(!slice)}>
                             <CropIcon/>
                         </Button>
                     </Tooltip>
@@ -186,7 +187,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                         title="Delete Track"
                         placement="top"
                     >
-                        <Button onClick={() => deleteTrack()}>
+                        <Button disabled={props.viewOnly} onClick={() => deleteTrack()}>
                             <DeleteIcon />
                         </Button>
                     </Tooltip>
@@ -204,6 +205,7 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                     placement="left"
                 >
                     <Slider 
+                        disabled={props.viewOnly}
                         value={reverbValue} 
                         onChange={(event: object, value: number | number[]) => setReverbValue(value as number)}
                         onChangeCommitted={(event: object, value: number | number[]) =>{ 
@@ -220,33 +222,35 @@ const UploadedTrack: React.FC<Props> =  (props) => {
                     placement="left"
                 >
                     <Slider 
-                    value={distortionValue} 
-                    onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
-                    onChangeCommitted={(event: object, value: number | number[]) => 
-                        props.addEffect('distortion', value as number, props.id)
-                    }
-                    step={0.1}
-                    min={0.0}
-                    max={1.0}
-                    className={classes.slider}
-                    valueLabelDisplay="auto"
-                />  
+                        disabled={props.viewOnly}
+                        value={distortionValue} 
+                        onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
+                        onChangeCommitted={(event: object, value: number | number[]) => 
+                            props.addEffect('distortion', value as number, props.id)
+                        }
+                        step={0.1}
+                        min={0.0}
+                        max={1.0}
+                        className={classes.slider}
+                        valueLabelDisplay="auto"
+                    />  
                 </Tooltip>}
                 {props.effects.tremolo.on && <Tooltip
                     title="Tremolo"
                     placement="left"
                 >
                     <Slider 
-                    value={tremoloValue} 
-                    onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
-                    onChangeCommitted={(event: object, value: number | number[]) => {
-                        props.addEffect('tremolo', value as number, props.id);
-                    }}
-                    min={0}
-                    max={10}
-                    className={classes.slider}
-                    valueLabelDisplay="auto"
-                />  
+                        disabled={props.viewOnly}
+                        value={tremoloValue} 
+                        onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
+                        onChangeCommitted={(event: object, value: number | number[]) => {
+                            props.addEffect('tremolo', value as number, props.id);
+                        }}
+                        min={0}
+                        max={10}
+                        className={classes.slider}
+                        valueLabelDisplay="auto"
+                    />  
                 </Tooltip>}
             </Box>
         );

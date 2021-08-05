@@ -34,6 +34,7 @@ type Props = {
     slice: (sliceFrom: number, sliceTo: number, id: string) => void;
     setFile: (file: Blob, id: string) => void;
     trackInfo: TrackInfo | undefined;
+    viewOnly: boolean;
 }
 
 const RecordedTrack: React.FC<Props> =  (props) => {
@@ -195,13 +196,16 @@ const RecordedTrack: React.FC<Props> =  (props) => {
         return (
             <Box display="flex" flexDirection="column" alignItems="center">
                 <ButtonGroup size="small" style={{marginTop: '10px'}}>
-                    <Button onClick={startRecording}>
-                        <RadioButtonCheckedIcon color='error'/>
+                    <Button onClick={startRecording} disabled={props.viewOnly}>
+                        {props.viewOnly ?
+                            <RadioButtonCheckedIcon/>
+                            : <RadioButtonCheckedIcon color='error'/>
+                        }
                     </Button>
-                    <Button onClick={pauseRecording}>
+                    <Button onClick={pauseRecording} disabled={props.viewOnly}>
                         <PauseIcon/>
                     </Button>
-                    <Button onClick={stopRecording}>
+                    <Button onClick={stopRecording} disabled={props.viewOnly}>
                         <StopIcon/>
                     </Button>
                 </ButtonGroup>
@@ -210,7 +214,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         title="Add Effect"
                         placement="top"
                     >
-                        <Button onClick={handleClick} size="small" variant="outlined">
+                        <Button onClick={handleClick} size="small" variant="outlined" disabled={props.viewOnly}>
                             <FlareIcon/>
                         </Button>
                     </Tooltip>
@@ -218,7 +222,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         title="Slice"
                         placement="top"
                     >
-                        <Button ref={sliceRef} onClick={() => setSlice(!slice)}>
+                        <Button ref={sliceRef} onClick={() => setSlice(!slice)} disabled={props.viewOnly}>
                             <CropIcon/>
                         </Button>
                     </Tooltip>
@@ -226,7 +230,7 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                         title="Delete Track"
                         placement="top"
                     >
-                        <Button onClick={() => deleteTrack()}>
+                        <Button onClick={() => deleteTrack()} disabled={props.viewOnly}>
                             <DeleteIcon />
                         </Button>
                     </Tooltip>
@@ -243,7 +247,8 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     title="Reverb"
                     placement="left"
                 >
-                    <Slider 
+                    <Slider
+                        disabled={props.viewOnly}
                         value={reverbValue} 
                         onChange={(event: object, value: number | number[]) => setReverbValue(value as number)}
                         onChangeCommitted={(event: object, value: number | number[]) =>{ 
@@ -259,34 +264,36 @@ const RecordedTrack: React.FC<Props> =  (props) => {
                     title="Distortion"
                     placement="left"
                 >
-                    <Slider 
-                    value={distortionValue} 
-                    onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
-                    onChangeCommitted={(event: object, value: number | number[]) => 
-                        props.addEffect('distortion', value as number, props.id)
-                    }
-                    step={0.1}
-                    min={0.0}
-                    max={1.0}
-                    className={classes.slider}
-                    valueLabelDisplay="auto"
-                />  
+                    <Slider
+                        disabled={props.viewOnly} 
+                        value={distortionValue} 
+                        onChange={(event: any, newValue: number | number[]) => setDistortionValue(newValue as number)}
+                        onChangeCommitted={(event: object, value: number | number[]) => 
+                            props.addEffect('distortion', value as number, props.id)
+                        }
+                        step={0.1}
+                        min={0.0}
+                        max={1.0}
+                        className={classes.slider}
+                        valueLabelDisplay="auto"
+                    />  
                 </Tooltip>}
                 {props.effects.tremolo.on && <Tooltip
                     title="Tremolo"
                     placement="left"
                 >
                     <Slider 
-                    value={tremoloValue} 
-                    onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
-                    onChangeCommitted={(event: object, value: number | number[]) => {
-                        props.addEffect('tremolo', value as number, props.id);
-                    }}
-                    min={0}
-                    max={10}
-                    className={classes.slider}
-                    valueLabelDisplay="auto"
-                />  
+                        disabled={props.viewOnly}
+                        value={tremoloValue} 
+                        onChange={(event: any, value: number | number[]) => setTremoloValue(value as number)}
+                        onChangeCommitted={(event: object, value: number | number[]) => {
+                            props.addEffect('tremolo', value as number, props.id);
+                        }}
+                        min={0}
+                        max={10}
+                        className={classes.slider}
+                        valueLabelDisplay="auto"
+                    />  
                 </Tooltip>}
             </Box>
         );

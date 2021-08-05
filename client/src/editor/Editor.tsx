@@ -50,9 +50,6 @@ const useStyles = makeStyles({
   button: {
     margin: '5px'
   },
-  orangeButton: {
-    backgroundColor: '#eb9875',
-  }
 });
 
 type Props = {
@@ -60,6 +57,7 @@ type Props = {
   projectName: string;
   newProject: boolean;
   projectSaved: boolean;
+  viewOnly: boolean;
   setProjectSaved: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -601,7 +599,7 @@ const Editor: React.FC<Props> = (props) => {
     <Box className={classes.box}>
       {getSnackBars()}
       <div style={{width: '120px', float: 'left'}}>
-        <Metronome/>
+        <Metronome viewOnly={props.viewOnly}/>
         <Box className={classes.root}>
           <ButtonGroup size="small" className={classes.button}>
               <Button onClick={play}>
@@ -614,15 +612,15 @@ const Editor: React.FC<Props> = (props) => {
                   <StopIcon/>
               </Button> 
           </ButtonGroup>
-          <Button className={classes.button} color='secondary' variant='contained' size='small' 
+          <Button disabled={props.viewOnly} className={classes.button} color='secondary' variant='contained' size='small' 
             onClick={() => addAudioTrack('recorded')}>Add recording track</Button>
-          <Button className={classes.button} color='secondary' variant='contained' size='small' 
+          <Button disabled={props.viewOnly} className={classes.button} color='secondary' variant='contained' size='small' 
             onClick={addSynthTrack}>Add synth track</Button>
-          <Button className={classes.button} color='secondary' variant='contained' size='small' 
+          <Button disabled={props.viewOnly} className={classes.button} color='secondary' variant='contained' size='small' 
             onClick={() => addAudioTrack('uploaded')}>Add track for uploading</Button>
-          <Button className={classes.button} color='primary' variant='contained' size='small' 
+          <Button disabled={props.viewOnly} className={classes.button} color='primary' variant='contained' size='small' 
             onClick={saveProject}>Save Project</Button>
-          <Button className={classes.button} color='primary' variant='contained' size='small' 
+          <Button disabled={props.viewOnly} className={classes.button} color='primary' variant='contained' size='small' 
             onClick={recordProject}>Download project to file</Button>
         </Box>
       </div>
@@ -645,6 +643,7 @@ const Editor: React.FC<Props> = (props) => {
               setFile={setAudioTrackFile}
               trackInfo={data.trackInfo}
               key={id}
+              viewOnly={props.viewOnly}
             /> :
             <UploadedTrack
               player={data.player}
@@ -659,6 +658,7 @@ const Editor: React.FC<Props> = (props) => {
               key={id}
               longestTrack={longestTrack}
               setLongestTrack={handleLongestTrack}
+              viewOnly={props.viewOnly}
             />;
             return track;
           })}
@@ -675,6 +675,7 @@ const Editor: React.FC<Props> = (props) => {
               setSynth={setSTSynth}
               deleteTrack={deleteTrack}
               key={id}
+              viewOnly={props.viewOnly}
             />
           })}
         </Box>

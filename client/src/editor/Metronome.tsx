@@ -2,12 +2,6 @@ import { Button, Box, TextField, makeStyles } from "@material-ui/core";
 import React, { useEffect, useState } from "react";
 import * as Tone from 'tone';
 
-// const soundUrls = [
-//     'https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/548518__ludwigmueller__perc-metronomequartz-hi.wav',
-//     'https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/50070__m1rk0__metronom-klack.wav',
-//     'https://music-hub-public-164582924dbjh.s3.eu-central-1.amazonaws.com/268822__kwahmah-02__woodblock.wav'
-// ];
-
 const useStyles = makeStyles({
     root: {
         boxShadow: '0 3px 5px 2px #a7abb0',
@@ -25,7 +19,11 @@ const useStyles = makeStyles({
     },
   });
 
-const Metronome: React.FC = () => {
+type Props = {
+    viewOnly: boolean;
+}
+
+const Metronome: React.FC<Props> = (props) => {
     const [bpm, setBpm] = useState<number>(120);
     const [beatsPerBar, setBeatsPerBar] = useState<number>(4);
     const [loop, setLoop] = useState<Tone.Loop>();
@@ -76,8 +74,8 @@ const Metronome: React.FC = () => {
         <Box className={classes.root}>
             <TextField label="BPM:" value={bpm} onChange={handleBpmChange}/>
             <TextField label="Beats per bar:" value={beatsPerBar} onChange={(e) => setBeatsPerBar(Number(e.target.value))}/>
-            <Button className={classes.button} onClick={updateMetronome} color='secondary' variant='contained' size='small'>apply</Button>
-            <Button className={classes.button} onClick={clickMute} color='secondary' variant='contained' size='small'>
+            <Button disabled={props.viewOnly} className={classes.button} onClick={updateMetronome} color='secondary' variant='contained' size='small'>apply</Button>
+            <Button disabled={props.viewOnly} className={classes.button} onClick={clickMute} color='secondary' variant='contained' size='small'>
                 {mute ? 'unmute' : 'mute'}
             </Button>
         </Box>

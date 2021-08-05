@@ -50,6 +50,7 @@ type Props = {
     setChordsOrder: (newOrder: string[], id: string) => void;
     setSynth: (newSynth: Tone.PolySynth, id: string) => void;
     deleteTrack: (id: string, type: string) => void;
+    viewOnly: boolean;
 }
 
 const SynthTrack: React.FC<Props> = (props) => {
@@ -63,6 +64,7 @@ const SynthTrack: React.FC<Props> = (props) => {
 
     useEffect(() => {
         props.synth.sync();
+        props.synth.volume.value = -10;
     }, [props.synth]);
 
 
@@ -251,14 +253,18 @@ const SynthTrack: React.FC<Props> = (props) => {
         <Card variant="outlined">
           <Grid container>
             <Grid item xs={1} style={{position: 'relative', marginLeft: '20px'}}>
-                <Button style={{margin: '5px'}} size='small' ref={chordMenuRef} onClick={() => setChordMenuOpen(true)} variant='outlined'>
+                <Button 
+                    disabled={props.viewOnly}
+                    style={{margin: '5px'}} size='small' ref={chordMenuRef}
+                    onClick={() => setChordMenuOpen(true)} variant='outlined'>
                     add chord
                 </Button>
                 <Tooltip
                     title="Delete Track"
                     placement="top"
                 >
-                    <Button size='small' variant='outlined' style={{marginBottom: '10px'}} onClick={() => deleteTrack()}>
+                    <Button disabled={props.viewOnly} size='small' variant='outlined'
+                        style={{marginBottom: '10px'}} onClick={() => deleteTrack()}>
                         <DeleteIcon />
                     </Button>
                 </Tooltip>

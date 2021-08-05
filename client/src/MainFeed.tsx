@@ -6,7 +6,11 @@ import { baseUrl } from './App';
 import { Snackbar } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
 
-const MainFeed: React.FC = () => {
+type Props = {
+  openProjectInEditor: (id: string, name: string) => void;
+}
+
+const MainFeed: React.FC<Props> = (props) => {
   const [projects, setProjects] = useState<ProjectProps[]>([]);
   const [isSet, setIsSet] = useState<Boolean>(false);
   const [alertOpen, setAlertOpen] = useState<boolean>(true);
@@ -70,7 +74,11 @@ const MainFeed: React.FC = () => {
       </Snackbar>
         {projects.map((project, index) => {
           return <div style={{margin: '5%'}} key={index}>
-            <ProjectCard {...project} key={index}/>
+            <ProjectCard 
+              {...project}
+              viewInEditor={props.openProjectInEditor}
+              key={index}
+            />
           </div>
         })}
     </div>
