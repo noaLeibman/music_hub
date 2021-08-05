@@ -160,18 +160,18 @@ const App = () => {
     setSignupButton(open);
   };
 
-  const createPopover = (open:boolean) => (
-    event: React.KeyboardEvent | React.MouseEvent,
-    ) => {
-      if (
-        event.type === 'keydown' && 
-        ((event as React.KeyboardEvent).key === 'Tab' || 
-        (event as React.KeyboardEvent).key === 'Shift')
-      ) {
-        return;
-    }
-    setCreateProject(open);
-  };
+  // const createPopover = (open:boolean) => (
+  //   event: React.KeyboardEvent | React.MouseEvent,
+  //   ) => {
+  //     if (
+  //       event.type === 'keydown' && 
+  //       ((event as React.KeyboardEvent).key === 'Tab' || 
+  //       (event as React.KeyboardEvent).key === 'Shift')
+  //     ) {
+  //       return;
+  //   }
+  //   setCreateProject(open);
+  // };
   const acceptFile = (files: any, e:any) =>{
     console.log(files[0]);
     const image_url_upload = URL.createObjectURL(files[0]);
@@ -235,10 +235,9 @@ const App = () => {
             <ListItemIcon><AccountCircleIcon/></ListItemIcon>
             <ListItemText primary={MenuItems.Profile} />
           </ListItem>
-          <ListItem button key={MenuItems.Create} onClick={() => {
+          <ListItem button disabled={userName === ""} key={MenuItems.Create} onClick={() => {
               setViewOnlyMode(false);
               setNewProjectFlag(true);
-              setSelectedPage(MenuItems.Create);
               setCreateProject(true);
             }}>
             <ListItemIcon><CreateNewFolderIcon/></ListItemIcon>
@@ -316,9 +315,12 @@ const App = () => {
   }
 
   const createProjectThenSet = async () => {
-    setCreateProject(false)
-    setMenuState(false);
+    if (projectname === "" || projectdescription === "") {
+      alert("Please fill the required field or click 'cancle'");
+      return;
+    }
     setCreateProject(false);
+    setMenuState(false);
     setSelectedPage(Create);
     const email = await tryMe();
     // console.log(email);
@@ -443,8 +445,7 @@ const App = () => {
                   }}
                   classes = {{paper: classes.popover}}
                   anchorEl ={createRef.current}
-                  open = {createProject}
-                  onClose = {createPopover(false)}>
+                  open = {createProject}>
                     <Box display="flex" flexDirection="column">
                       <TextField label="Project Name:" value={projectname} onChange = {handleProjectNameChange}/>
                       <TextField label="Description:" value={projectdescription} onChange = {handleProjectDescriptionChange}/>
@@ -461,6 +462,7 @@ const App = () => {
                       : <img src={createProjectImage} alt="" style={{maxWidth: '300px'}}/>
                       }
                       <Button onClick={createProjectThenSet}>Apply</Button>
+                      <Button onClick={() => setCreateProject(false)}>cancel</Button>
                     </Box>  
             </Popover>
             <Collapse in={collapseOpen}>
