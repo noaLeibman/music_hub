@@ -160,18 +160,6 @@ const App = () => {
     setSignupButton(open);
   };
 
-  // const createPopover = (open:boolean) => (
-  //   event: React.KeyboardEvent | React.MouseEvent,
-  //   ) => {
-  //     if (
-  //       event.type === 'keydown' && 
-  //       ((event as React.KeyboardEvent).key === 'Tab' || 
-  //       (event as React.KeyboardEvent).key === 'Shift')
-  //     ) {
-  //       return;
-  //   }
-  //   setCreateProject(open);
-  // };
   const acceptFile = (files: any, e:any) =>{
     console.log(files[0]);
     const image_url_upload = URL.createObjectURL(files[0]);
@@ -220,7 +208,14 @@ const App = () => {
   }
 
   const changeSelectedPage = (page: MenuItems) => {
-    setSelectedPage(page);
+    if (page === selectedPage) return;
+    if (selectedPage === Create && !viewOnlyMode) {
+      if (window.confirm("Move to a different page? \n (If you didn't save your changes, click 'cancel' and save your project)")) {
+        setSelectedPage(page);
+      }
+    } else {
+      setSelectedPage(page);
+    }
   }
   
   const getMenuDrawer = () => {
@@ -343,6 +338,8 @@ const App = () => {
       setMenuState(false);
       setCreateProject(false);
       setSelectedPage(Create);
+      setProjectName("");
+      setProjectDescription("");
 
       const project_id = data.uuid
       if(createProjectImageFile){
