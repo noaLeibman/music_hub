@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, desc
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, desc, LargeBinary
 from sqlalchemy.orm import relationship
 import uuid
 from database import Base, engine
@@ -19,7 +19,7 @@ class UserInfo(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     email = Column(String, unique=True, index=True)
     full_name = Column(String)
-    hashed_password = Column(String)
+    hashed_password = Column(LargeBinary)
     disabled = Column(Boolean, default=False)
     projects = relationship("Project", secondary="projects_users", viewonly=True, sync_backref=False, backref="projects_users",
                             lazy="dynamic")
