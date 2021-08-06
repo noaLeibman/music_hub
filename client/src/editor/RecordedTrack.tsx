@@ -89,9 +89,10 @@ const RecordedTrack: React.FC<Props> =  (props) => {
     }, [props, needLoading, playerLoaded]);
 
     useEffect(() => {
-        if (!trackInfoApplied && playerLoaded) {
+        if (!trackInfoApplied && playerLoaded && props.player.loaded) {
             setTrackInfoApplied(true);
             props.trackInfo?.slices.forEach((slice: number[]) => {
+                console.log(slice);
                 props.slice(slice[0], slice[1], props.id);
             })
             if (props.trackInfo?.reverb) {

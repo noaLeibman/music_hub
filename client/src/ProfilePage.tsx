@@ -57,13 +57,14 @@ const options = {
 const ProfilePage: React.FC<Props> = (props) => {
   const [projects, setProjects] = useState<ProjectDetails[]>([]);
   const [alreadyGotProjects, setAlreadyGotProjects] = useState<boolean>(false); 
-  const [alertOpen, setAlertOpen] = useState<boolean>(true);
+  const [alertOpen, setAlertOpen] = useState<boolean>(false);
   const [successAlertOpen, setSuccessAlertOpen] = useState<boolean>(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState<boolean>(false);
   const [deleteSuccessAlertOpen, setDeleteSuccessAlertOpen] = useState<boolean>(false);
   const classes = useStyles();
 
   useEffect(() => {
+    if (props.userName !== "" && !alreadyGotProjects) setAlertOpen(true);
     if (!alreadyGotProjects && props.email !== "") {
       setAlreadyGotProjects(true);
       axios.get(baseUrl + 'users/project?mail=' + props.email, options

@@ -24,7 +24,7 @@ const MainFeed: React.FC<Props> = (props) => {
       }
     };
     axios.get(baseUrl + 'project/recent', options
-    ).then(async projectPreviewData => {
+    ).then(projectPreviewData => {
       let projectsData: ProjectProps[] = JSON.parse(projectPreviewData.data, 
         (key, value) => {if (key === 'image_url' && typeof value !== 'string') {
           return "";
@@ -47,6 +47,7 @@ const MainFeed: React.FC<Props> = (props) => {
 
   return (
     <div style={{
+      minHeight: '700xp',
       backgroundImage: "url(" + backImg + ")",
       backgroundAttachment: 'fixed',
       backgroundPosition: 'center',

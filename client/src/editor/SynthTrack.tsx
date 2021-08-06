@@ -202,6 +202,8 @@ const SynthTrack: React.FC<Props> = (props) => {
             }
         });
         newMap.delete(chordId);
+        synth.disconnect(Tone.getDestination());
+        synth.unsync();
         synth.dispose();
         props.setLength(dur ? props.length - dur : props.length, props.id);
         setActiveChords(newMap, id);
@@ -232,7 +234,7 @@ const SynthTrack: React.FC<Props> = (props) => {
                 position={widthRef.current ? widthRef.current.offsetWidth * (currData.startTime / totalTime) : 0}
                 startTime={currData.startTime}
                 wholeTrackWidth={widthRef.current ? widthRef.current.offsetWidth : 0}
-                color={colors[index]}
+                color={colors[index % colors.length]}
                 deleteChord={deleteChord}
                 key={index}
             />

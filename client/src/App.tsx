@@ -5,7 +5,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
-import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse, makeStyles } from '@material-ui/core';
+import { Box, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Popover, TextField, Collapse, makeStyles, Snackbar } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import DnsIcon from '@material-ui/icons/Dns';
@@ -79,8 +79,9 @@ const App = () => {
   const [newProjectFlag, setNewProjectFlag] = useState<boolean>(true);
   const [viewOnlyMode, setViewOnlyMode] = useState<boolean>(false);
   const [projectSaved, setProjectSaved] = useState<boolean>(false);
-  const [createProjectImage, setCreateProjectImage] = useState<string>("")
-  const [createProjectImageFile, setCreateProjectImageFile] = useState<Blob>()
+  const [createProjectImage, setCreateProjectImage] = useState<string>("");
+  const [createProjectImageFile, setCreateProjectImageFile] = useState<Blob>();
+  const [loginError, setLoginError] = useState<boolean>(false);
   const loginRef = useRef(null);
   const signupRef = useRef(null);
   const createRef = useRef(null);
@@ -275,7 +276,7 @@ const App = () => {
     }).catch(e => {
       console.log("Login error");
       console.log(e.request);
-      
+      setLoginError(true);
     });
   }
 
@@ -296,17 +297,17 @@ const App = () => {
       body: JSON.stringify(data),
     })
     .then(response => response.json())
-  .then(data => {
-    console.log('Success:', data);
-    setCollapseOpen(true);
-    setSignupButton(false);
-    setSignupPassword("");
-    setSignupEmail("");
+    .then(data => {
+      console.log('Success:', data);
+      setCollapseOpen(true);
+      setSignupButton(false);
+      setSignupPassword("");
+      setSignupEmail("");
 
-  })
-  .catch((error) => {
-    console.error('Error:', error);
-  });
+    })
+    .catch((error) => {
+      console.error('Error in logout:', error);
+    });
   }
 
   const createProjectThenSet = async () => {
@@ -379,6 +380,15 @@ const App = () => {
 
   return (
     <div className="App" ref={createRef} >
+        <Snackbar 
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          open={loginError}
+          autoHideDuration={2000}
+          onClose={() =>setLoginError(false)}>
+          <Alert severity="error">
+            Email or password incorrect
+          </Alert>
+        </Snackbar>
         {getMenuDrawer()}
         <AppBar position="static" color='primary'>
           <Toolbar>

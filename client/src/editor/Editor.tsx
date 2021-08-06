@@ -335,7 +335,8 @@ const Editor: React.FC<Props> = (props) => {
 }
 
   const sliceTrack = (sliceFrom: number, sliceTo: number, id: string) => {
-    if (sliceFrom >= sliceTo) {
+    // console.log("slicing: " + sliceFrom + ", " + sliceTo);
+    if (sliceFrom >= sliceTo && sliceTo !== 0) {
       return;
     }
     let track = audioTracks.get(id);
@@ -343,15 +344,26 @@ const Editor: React.FC<Props> = (props) => {
       console.log('sliceTrack: id not found');
       return;
     }
-    const {player, slices} = track; 
-    const buffer1 = player?.player?.getBuffer()?.slice(0, sliceFrom);
-    const buffer2 = player?.player?.getBuffer()?.slice(sliceTo);
-    if (!(buffer1 && buffer2)) {
+    const {player, slices} = track;
+    let buffer1, buffer2, newBuffer;
+    if (sliceFrom > 0) {
+      buffer1 = player?.player?.getBuffer()?.slice(0, sliceFrom);
+    }
+    // console.log(player?.player?.getBuffer()?.duration);
+    if (sliceTo > 0) {
+      buffer2 = player?.player?.getBuffer()?.slice(sliceTo);
+    } 
+    if (!buffer1 && !buffer2) {
         console.log('in sliceTrack: buffers are empty');
         return;
     }
-    const newBuffer = utils.concat(buffer1.get(), buffer2.get());
-    utils.concat(buffer1.get(), buffer2.get());
+    if (buffer1 && buffer2) {
+      newBuffer = utils.concat(buffer1.get(), buffer2.get());
+    } else if (buffer1) {
+      newBuffer = buffer1;
+    } else if (buffer2) {
+      newBuffer = buffer2;
+    }
     player?.player?.getBuffer().set(newBuffer);
     player?.setPeaksBuffer(newBuffer);
     slices.push([sliceFrom, sliceTo]);
